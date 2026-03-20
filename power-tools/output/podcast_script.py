@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, load_json, load_yaml
 from common.llm import chat_completion
+from common.runtime import is_test_mode
 
 
 def main() -> None:
@@ -29,7 +30,15 @@ def main() -> None:
         },
         {"role": "user", "content": digest["markdown"]},
     ]
-    script = chat_completion(messages, max_tokens=1800, temperature=0.4)
+    if is_test_mode():
+        script = (
+            f"# Sample Podcast Script for {digest.get('date', 'unknown')}\n\n"
+            "Welcome to the sample daily lab briefing.\n\n"
+            "Today we have preview content generated in test mode, so nothing external was published or updated.\n\n"
+            "Use this run to verify formatting, downstream Matrix delivery, and artifact generation."
+        )
+    else:
+        script = chat_completion(messages, max_tokens=1800, temperature=0.4)
     script_file = output_cfg.get("podcast", {}).get("script_file", "podcast_script.md")
     (OUTPUT_DIR / script_file).write_text(script, encoding="utf-8")
     print(f"Wrote podcast script to {OUTPUT_DIR / script_file}")

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Junkyard Racoon nightly pipeline each morning
+
+[Timer]
+OnCalendar=*-*-* 06:15:00
+Persistent=true
+Unit=junkyard-racoon-nightly.service
+
+[Install]
+WantedBy=timers.target

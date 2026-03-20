@@ -1,0 +1,3 @@
+# Run the nightly pipeline at 06:15 every day.
+# Adjust the repo path, Python path, and log path for your host.
+15 6 * * * cd /opt/junkyard-racoon && /usr/bin/python3 power-tools/nightly_run.py >> /var/log/junkyard-racoon-nightly.log 2>&1

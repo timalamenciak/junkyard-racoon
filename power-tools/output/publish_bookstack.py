@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, load_json, load_yaml
+from common.runtime import is_test_mode
 
 
 def headers(config: dict) -> dict[str, str]:
@@ -29,6 +30,16 @@ def main() -> None:
     output_cfg = load_yaml(CONFIGS_DIR / "output.yaml")
     bookstack = output_cfg.get("bookstack", {})
     page_name = f"Daily Lab Digest {digest.get('date', 'unknown')}"
+
+    if is_test_mode():
+        payload_out = {
+            "page_url": f"{bookstack.get('url', 'https://example.org').rstrip('/')}/books/sample/pages/{page_name.lower().replace(' ', '-')}",
+            "page_name": page_name,
+            "test_mode": True,
+        }
+        (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(payload_out, indent=2), encoding="utf-8")
+        print(payload_out["page_url"])
+        return
 
     search_url = f"{bookstack['url']}/api/search?query={urllib.parse.quote(page_name)}&type=page"
     req = urllib.request.Request(search_url, headers=headers(bookstack))
@@ -57,7 +68,7 @@ def main() -> None:
         result = json.loads(resp.read())
 
     page_url = f"{bookstack['url']}/books/{result.get('book_slug', '')}/pages/{result.get('slug', '')}"
-    payload_out = {"page_url": page_url, "page_name": page_name}
+    payload_out = {"page_url": page_url, "page_name": page_name, "test_mode": False}
     (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(payload_out, indent=2), encoding="utf-8")
     print(page_url)
 

@@ -11,14 +11,52 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import CONFIGS_DIR, PROCESSING_DIR, dump_json, ensure_data_dirs, load_yaml
 from common.llm import chat_completion, extract_json_payload
+from common.runtime import is_test_mode
 
 
 MAX_NOTE_CHARS = 6000
 
 
+def sample_items() -> list[dict]:
+    return [
+        {
+            "vault": "sample-vault",
+            "note": "Projects/Restoration Sprint.md",
+            "priority": "high",
+            "task": "Confirm the shortlist of papers for journal club.",
+            "owner_guess": "Tim",
+            "deadline_guess": "This week",
+            "rationale": "Sample task generated in test mode.",
+        },
+        {
+            "vault": "sample-vault",
+            "note": "Projects/Grant Tracker.md",
+            "priority": "medium",
+            "task": "Check eligibility notes for the biodiversity catalyst grant.",
+            "owner_guess": "Lab admin",
+            "deadline_guess": "Before next digest run",
+            "rationale": "Useful for previewing digest formatting without scanning a vault.",
+        },
+    ]
+
+
 def main() -> None:
     ensure_data_dirs()
     config = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
+    if is_test_mode():
+        items = sample_items()
+        dump_json(
+            PROCESSING_DIR / "obsidian_todos.json",
+            {
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "notes_scanned": 0,
+                "items": items,
+                "test_mode": True,
+            },
+        )
+        print(f"Extracted {len(items)} sample Obsidian tasks")
+        return
+
     vault_paths = [Path(path) for path in config.get("obsidian_vault_paths", [])]
     note_payloads: list[dict] = []
 

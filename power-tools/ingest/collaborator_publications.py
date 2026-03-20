@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.http_utils import fetch_json
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_yaml
+from common.runtime import is_test_mode
 
 
 OPENALEX_AUTHOR_URL = "https://api.openalex.org/authors"
@@ -47,8 +48,35 @@ def fetch_recent_works(author_id: str, days_back: int) -> list[dict]:
     return items
 
 
+def sample_items() -> list[dict]:
+    return [
+        {
+            "collaborator": "Sample Collaborator",
+            "title": "Sample: Participatory restoration planning with decision support agents",
+            "link": "https://example.org/sample-collaborator-paper",
+            "published": datetime.date.today().isoformat(),
+            "authors": ["Sample Collaborator", "A. Researcher"],
+            "source": "openalex",
+            "openalex_id": "https://openalex.org/Wsample123",
+        }
+    ]
+
+
 def main() -> None:
     ensure_data_dirs()
+    if is_test_mode():
+        items = sample_items()
+        dump_json(
+            INGEST_DIR / "collaborator_publications.json",
+            {
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "items": items,
+                "test_mode": True,
+            },
+        )
+        print(f"Wrote {len(items)} sample collaborator publication records to {INGEST_DIR / 'collaborator_publications.json'}")
+        return
+
     config = load_yaml(CONFIGS_DIR / "collaborators.yaml")
     items: list[dict] = []
     days_back = int(config.get("days_back", 14))

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.http_utils import fetch_bytes
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_yaml
+from common.runtime import is_test_mode
 
 
 HTML_RE = re.compile(r"<[^>]+>")
@@ -35,8 +36,35 @@ def parse_date(entry) -> str:
     return "unknown"
 
 
+def sample_items() -> list[dict]:
+    return [
+        {
+            "source_type": "grant_rss",
+            "source": "Sample Grants Feed",
+            "title": "Sample: AI for biodiversity monitoring catalyst grant",
+            "link": "https://example.org/sample-ai-biodiversity-grant",
+            "summary": "Seed funding for applied AI, biodiversity monitoring, and community knowledge partnerships.",
+            "published": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "tags": ["ai", "biodiversity", "test-mode"],
+        }
+    ]
+
+
 def main() -> None:
     ensure_data_dirs()
+    if is_test_mode():
+        items = sample_items()
+        dump_json(
+            INGEST_DIR / "grant_opportunities.json",
+            {
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "items": items,
+                "test_mode": True,
+            },
+        )
+        print(f"Wrote {len(items)} sample grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
+        return
+
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
     items: list[dict] = []
     seen_links = set()

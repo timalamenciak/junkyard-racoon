@@ -19,10 +19,11 @@ DATA_DIR = ROOT / "data"
 INGEST_DIR = DATA_DIR / "ingest"
 PROCESSING_DIR = DATA_DIR / "processing"
 OUTPUT_DIR = DATA_DIR / "output"
+STATE_DIR = DATA_DIR / "state"
 
 
 def ensure_data_dirs() -> None:
-    for path in (INGEST_DIR, PROCESSING_DIR, OUTPUT_DIR):
+    for path in (INGEST_DIR, PROCESSING_DIR, OUTPUT_DIR, STATE_DIR):
         path.mkdir(parents=True, exist_ok=True)
 
 

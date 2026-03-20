@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, PROCESSING_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
 from common.llm import chat_completion, extract_json_payload
+from common.runtime import is_test_mode
 
 
 def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
@@ -36,6 +37,16 @@ def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def score_grants_for_test_mode(grants: list[dict]) -> list[dict]:
+    for idx, grant in enumerate(grants):
+        score = max(0.5, 0.85 - (idx * 0.1))
+        grant["relevance_score"] = round(score, 2)
+        grant["llm_summary"] = f"Sample grant summary for {grant.get('title', 'untitled grant')}."
+        grant["rationale"] = "Generated in test mode without calling the LLM."
+        grant["next_step"] = "Decide whether to assign a quick eligibility review."
+    return grants
+
+
 def main() -> None:
     ensure_data_dirs()
     lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
@@ -46,15 +57,18 @@ def main() -> None:
         print("No grant opportunities to score")
         return
 
-    response = chat_completion(build_prompt(grants, lab_profile), max_tokens=2600, temperature=0.0)
-    scored = extract_json_payload(response)
-    for item in scored:
-        idx = item.get("index")
-        if isinstance(idx, int) and 0 <= idx < len(grants):
-            grants[idx]["relevance_score"] = float(item.get("score", 0.0))
-            grants[idx]["llm_summary"] = item.get("summary", "")
-            grants[idx]["rationale"] = item.get("rationale", "")
-            grants[idx]["next_step"] = item.get("next_step", "")
+    if is_test_mode():
+        grants = score_grants_for_test_mode(grants)
+    else:
+        response = chat_completion(build_prompt(grants, lab_profile), max_tokens=2600, temperature=0.0)
+        scored = extract_json_payload(response)
+        for item in scored:
+            idx = item.get("index")
+            if isinstance(idx, int) and 0 <= idx < len(grants):
+                grants[idx]["relevance_score"] = float(item.get("score", 0.0))
+                grants[idx]["llm_summary"] = item.get("summary", "")
+                grants[idx]["rationale"] = item.get("rationale", "")
+                grants[idx]["next_step"] = item.get("next_step", "")
 
     relevant = [item for item in grants if item.get("relevance_score", 0.0) >= float(lab_profile.get("grant_relevance_threshold", 0.65))]
     relevant.sort(key=lambda item: item.get("relevance_score", 0.0), reverse=True)
@@ -64,6 +78,7 @@ def main() -> None:
             "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "items": grants,
             "relevant_items": relevant,
+            "test_mode": is_test_mode(),
         },
     )
     print(f"Scored {len(grants)} grants; kept {len(relevant)} relevant")

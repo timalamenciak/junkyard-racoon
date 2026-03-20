@@ -14,7 +14,8 @@ import feedparser
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.http_utils import fetch_bytes
-from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_yaml
+from common.io_utils import CONFIGS_DIR, INGEST_DIR, STATE_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
+from common.runtime import is_test_mode
 
 
 HTML_RE = re.compile(r"<[^>]+>")
@@ -41,12 +42,55 @@ def parse_date(entry) -> str:
     return "unknown"
 
 
+def article_key(link: str, title: str, published: str) -> str:
+    return "||".join((link.strip(), title.strip().lower(), published.strip()))
+
+
+def sample_items() -> list[dict]:
+    return [
+        {
+            "source_type": "journal_rss",
+            "feed": "Methods in Ecology and Evolution",
+            "title": "Sample: Benchmarking LLM-assisted habitat classification workflows",
+            "link": "https://example.org/sample-llm-habitat-classification",
+            "summary": "Sample article for test mode showing an AI-enabled ecology methods paper.",
+            "published": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "tags": ["ai", "methods", "test-mode"],
+        },
+        {
+            "source_type": "journal_rss",
+            "feed": "Restoration Ecology",
+            "title": "Sample: Community-led restoration outcomes across urban wetlands",
+            "link": "https://example.org/sample-urban-wetlands-restoration",
+            "summary": "Sample article for test mode covering restoration practice and social dimensions.",
+            "published": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "tags": ["restoration", "community", "test-mode"],
+        },
+    ]
+
+
 def main() -> None:
     ensure_data_dirs()
+    if is_test_mode():
+        items = sample_items()
+        dump_json(
+            INGEST_DIR / "journal_articles.json",
+            {
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "items": items,
+                "test_mode": True,
+            },
+        )
+        print(f"Wrote {len(items)} sample journal articles to {INGEST_DIR / 'journal_articles.json'}")
+        return
+
     config = load_yaml(CONFIGS_DIR / "journals.yaml")
     lookback_hours = int(config.get("lookback_hours", 48))
     cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=lookback_hours)
     items: list[dict] = []
+    existing_state = load_json(STATE_DIR / "rss_seen_articles.json", default={}) or {}
+    seen_article_keys = set(existing_state.get("seen_article_keys", []))
+    updated_article_keys = set(seen_article_keys)
     seen_links = set()
 
     for feed in config.get("feeds", []):
@@ -61,15 +105,22 @@ def main() -> None:
                     continue
 
             link = entry.get("link", "").strip()
+            title = entry.get("title", "").strip()
             if not link or link in seen_links:
                 continue
+            if not title:
+                continue
             seen_links.add(link)
+            key = article_key(link, title, published)
+            if key in seen_article_keys:
+                continue
+            updated_article_keys.add(key)
 
             items.append(
                 {
                     "source_type": "journal_rss",
                     "feed": feed_name,
-                    "title": entry.get("title", "").strip(),
+                    "title": title,
                     "link": link,
                     "summary": strip_html(entry.get("summary", entry.get("description", ""))),
                     "published": published,
@@ -80,6 +131,13 @@ def main() -> None:
     dump_json(
         INGEST_DIR / "journal_articles.json",
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
+    )
+    dump_json(
+        STATE_DIR / "rss_seen_articles.json",
+        {
+            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "seen_article_keys": sorted(updated_article_keys),
+        },
     )
     print(f"Wrote {len(items)} journal articles to {INGEST_DIR / 'journal_articles.json'}")
 

@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+from common.runtime import TEST_MODE_ENV
 
 
 ROOT = Path(__file__).resolve().parent
@@ -25,9 +28,20 @@ STEPS = [
 
 
 def main() -> None:
+    test_mode = "--test" in sys.argv[1:]
+    env = os.environ.copy()
+    if test_mode:
+        env[TEST_MODE_ENV] = "1"
+        print("[nightly-run] test mode enabled; external side effects will be skipped")
+
     for label, script in STEPS:
         print(f"[nightly-run] {label}: {script}")
-        completed = subprocess.run([sys.executable, str(script)], cwd=str(ROOT.parent), check=False)
+        completed = subprocess.run(
+            [sys.executable, str(script)] + (["--test"] if test_mode else []),
+            cwd=str(ROOT.parent),
+            env=env,
+            check=False,
+        )
         if completed.returncode != 0:
             raise SystemExit(f"Step failed: {label}")
     print("[nightly-run] complete")

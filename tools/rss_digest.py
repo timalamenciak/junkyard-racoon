@@ -127,6 +127,7 @@ DAEMON_CONFIG_PATH_CANDIDATES = [
     Path(os.environ.get("MATRIX_BOT_CONFIG", "")).expanduser() if os.environ.get("MATRIX_BOT_CONFIG") else None,
     Path(__file__).resolve().parent.parent / "matrix-bot-daemon.yaml",
 ]
+RSS_STATE_PATH = Path(__file__).resolve().parent.parent / "power-tools" / "data" / "state" / "rss_seen_articles.json"
 
 # ════════════════════════════════════════════════════════════════
 # HELPERS
@@ -166,6 +167,61 @@ def parse_date(entry) -> datetime.datetime | None:
             except Exception:
                 pass
     return None
+
+
+def article_key(link: str, title: str, published: str) -> str:
+    return "||".join((link.strip(), title.strip().lower(), published.strip()))
+
+
+def load_read_state() -> set[str]:
+    if not RSS_STATE_PATH.exists():
+        return set()
+    try:
+        payload = json.loads(RSS_STATE_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"Could not read RSS state file: {exc}")
+        return set()
+    return set(payload.get("seen_article_keys", []))
+
+
+def save_read_state(keys: set[str]) -> None:
+    RSS_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RSS_STATE_PATH.write_text(
+        json.dumps(
+            {
+                "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "seen_article_keys": sorted(keys),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def sample_articles() -> list[dict]:
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return [
+        {
+            "title": "Sample: Benchmarking LLM-assisted habitat classification workflows",
+            "link": "https://example.org/sample-llm-habitat-classification",
+            "summary": "Sample article for test mode showing an AI-enabled ecology methods paper.",
+            "short_summary": "Sample article for test mode showing an AI-enabled ecology methods paper.",
+            "published": now,
+            "feed": "Methods in Ecology and Evolution",
+            "score": 0.91,
+            "reason": "Strong methods fit",
+        },
+        {
+            "title": "Sample: Community-led restoration outcomes across urban wetlands",
+            "link": "https://example.org/sample-urban-wetlands-restoration",
+            "summary": "Sample article for test mode covering restoration practice and social dimensions.",
+            "short_summary": "Sample article for test mode covering restoration practice and social dimensions.",
+            "published": now,
+            "feed": "Restoration Ecology",
+            "score": 0.84,
+            "reason": "Direct restoration relevance",
+        },
+    ]
 
 
 def _extract_json_array(raw: str) -> str:
@@ -245,11 +301,13 @@ def _request_json(req: urllib.request.Request, timeout: int, retries: int | None
     raise RuntimeError(f"request failed after {retries} attempts: {last_error}")
 
 
-def fetch_feeds(lookback_hours: int) -> list[dict]:
+def fetch_feeds(lookback_hours: int, read_state: set[str] | None = None) -> tuple[list[dict], set[str]]:
     """Fetch all configured feeds; return articles from the last N hours."""
     cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=lookback_hours)
     articles = []
     seen_keys = set()
+    read_state = set(read_state or ())
+    updated_state = set(read_state)
 
     for url in CONFIG["feeds"]:
         log(f"Fetching {url}")
@@ -290,6 +348,10 @@ def fetch_feeds(lookback_hours: int) -> list[dict]:
             if dedupe_key in seen_keys:
                 continue
             seen_keys.add(dedupe_key)
+            state_key = article_key(link, title, pub.isoformat() if pub else "unknown")
+            if state_key in read_state:
+                continue
+            updated_state.add(state_key)
 
             articles.append({
                 "title":         title,
@@ -305,7 +367,7 @@ def fetch_feeds(lookback_hours: int) -> list[dict]:
         log(f"  → {count} articles within window")
 
     log(f"Total articles fetched: {len(articles)}")
-    return articles
+    return articles, updated_state
 
 
 # ════════════════════════════════════════════════════════════════
@@ -411,7 +473,7 @@ def _llm_request_claude(messages: list[dict]) -> str:
     return data["content"][0]["text"]
 
 
-def score_articles(articles: list[dict]) -> list[dict]:
+def score_articles(articles: list[dict], test_mode: bool = False) -> list[dict]:
     """
     Score articles in batches. Adds a 'score' float (0–1) to each dict.
     Each batch call returns a JSON array like:
@@ -419,6 +481,12 @@ def score_articles(articles: list[dict]) -> list[dict]:
     """
     batch_size = CONFIG["batch_size"]
     total = len(articles)
+
+    if test_mode:
+        for idx, article in enumerate(articles):
+            article["score"] = round(max(0.6, 0.92 - (idx * 0.08)), 2)
+            article["reason"] = "Generated in test mode"
+        return articles
 
     for start in range(0, total, batch_size):
         batch = articles[start : start + batch_size]
@@ -509,8 +577,10 @@ def build_bookstack_markdown(relevant: list[dict], date_str: str) -> str:
     return "\n".join(lines)
 
 
-def post_to_bookstack(markdown: str, date_str: str) -> str | None:
+def post_to_bookstack(markdown: str, date_str: str, test_mode: bool = False) -> str | None:
     """Create (or update) a BookStack page. Returns the page URL or None."""
+    if test_mode:
+        return f"https://example.org/books/sample/pages/literature-digest-{date_str}"
     if not CONFIG.get("bookstack_url"):
         log("BookStack disabled: no BOOKSTACK_URL configured")
         return None
@@ -615,6 +685,7 @@ def main():
 
     # Allow simple overrides via stdin: "threshold=0.7" "provider=claude" or blank
     stdin_input = sys.stdin.read().strip()
+    test_mode = "--test" in sys.argv[1:] or os.environ.get("POWER_TOOLS_TEST_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
     for token in stdin_input.split():
         if "=" in token:
             k, _, v = token.partition("=")
@@ -632,17 +703,24 @@ def main():
             elif k == "provider":
                 CONFIG["llm_provider"] = v.strip().lower()
                 log(f"Provider overridden → {CONFIG['llm_provider']}")
+            elif k == "test":
+                test_mode = v.strip().lower() in {"1", "true", "yes", "on"}
 
     date_str = datetime.datetime.now(datetime.timezone.utc).strftime(CONFIG["date_format"])
 
     # 1. Fetch
-    articles = fetch_feeds(CONFIG["lookback_hours"])
+    if test_mode:
+        articles = sample_articles()
+        updated_read_state = load_read_state()
+        log("Test mode enabled; using sample RSS articles and leaving read state unchanged")
+    else:
+        articles, updated_read_state = fetch_feeds(CONFIG["lookback_hours"], read_state=load_read_state())
     if not articles:
         print("📰 No articles found in the last 24 hours.")
         return
 
     # 2. Score
-    articles = score_articles(articles)
+    articles = score_articles(articles, test_mode=test_mode)
 
     # 3. Filter & sort
     relevant = [a for a in articles if a["score"] >= CONFIG["relevance_threshold"]]
@@ -654,11 +732,13 @@ def main():
     page_url = None
     if relevant:
         md = build_bookstack_markdown(relevant, date_str)
-        page_url = post_to_bookstack(md, date_str)
+        page_url = post_to_bookstack(md, date_str, test_mode=test_mode)
         if page_url:
             log(f"BookStack page: {page_url}")
         else:
             log("BookStack post failed.")
+    if not test_mode:
+        save_read_state(updated_read_state)
 
     # 5. Matrix message → stdout
     msg = build_matrix_message(relevant, page_url, date_str)

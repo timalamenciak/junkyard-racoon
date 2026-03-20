@@ -54,6 +54,16 @@ Generated files are written under `data/`:
 py -3 power-tools\nightly_run.py
 ```
 
+For a non-destructive preview run that generates sample artifacts instead of calling external systems:
+
+```powershell
+py -3 power-tools\nightly_run.py --test
+```
+
+Sample scheduler definitions live in [`deploy/power-tools-nightly.cron`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/power-tools-nightly.cron), [`deploy/junkyard-racoon-nightly.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.service), and [`deploy/junkyard-racoon-nightly.timer`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.timer).
+
+Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_seen_articles.json` so the same article is not surfaced repeatedly on subsequent real runs.
+
 ## Recommended Matrix Bot Role
 
 The Matrix bot should read and relay artifacts from `power-tools/data/output/` by default.
