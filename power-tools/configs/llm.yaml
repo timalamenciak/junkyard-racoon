@@ -1,0 +1,5 @@
+provider: groq
+endpoint: https://api.groq.com/openai/v1/chat/completions
+api_key: replace-me
+model: llama-3.3-70b-versatile
+timeout: 60

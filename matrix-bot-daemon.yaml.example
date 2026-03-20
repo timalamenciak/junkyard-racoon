@@ -1,0 +1,20 @@
+# Copy this file to matrix-bot-daemon.yaml and edit as needed.
+
+llm:
+  provider: openai_compatible
+  url: http://172.16.5.8:8080/v1/chat/completions
+  api_key: replace-me
+  model: qwen3-14b
+
+  # Claude example:
+  # provider: claude
+  # claude_api_key: replace-me
+  # claude_model: claude-opus-4-6
+
+commands:
+  rss_digest:
+    enabled: true
+    env:
+      BOOKSTACK_URL: https://wiki.lab.tim-a.ca
+      BOOKSTACK_TOKEN_ID: replace-me
+      BOOKSTACK_TOKEN_SECRET: replace-me

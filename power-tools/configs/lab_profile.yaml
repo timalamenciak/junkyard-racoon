@@ -1,0 +1,32 @@
+lab_name: Racoon Lab
+institution: Wilfrid Laurier University
+principal_investigator: Tim Alamenciak
+article_relevance_threshold: 0.75
+grant_relevance_threshold: 0.65
+research_interests:
+  - AI, semantics, and machine learning applications in ecology and conservation biology
+  - Human dimensions of restoration and conservation
+  - Restoration ecology and social science aspects of restoration practice
+  - Researcher-practitioner connections, knowledge co-production, and boundary work
+  - Conservation policy, community-based conservation, and Indigenous-led stewardship
+article_scoring_rules:
+  - Score highest when a paper is directly useful for ongoing lab projects, methods, or collaborator conversations.
+  - Prefer papers that connect ecological science with social dimensions, restoration practice, policy, or knowledge mobilization.
+  - Prefer methods papers when they could improve semantic workflows, AI pipelines, or evidence synthesis.
+  - Down-rank papers that are broadly ecological but not actionable for the lab.
+grant_priority_areas:
+  - Restoration ecology and biodiversity conservation
+  - Human dimensions, knowledge mobilization, and community-engaged research
+  - AI, data systems, and semantic tooling in ecology
+  - Partnership-based research involving practitioners, communities, or Indigenous stewardship
+grant_scoring_rules:
+  - Score highest when the opportunity plausibly fits the lab's size, discipline, and collaboration style.
+  - Prefer grants that support partnerships, interdisciplinary work, graduate trainees, or knowledge mobilization.
+  - Down-rank items that appear to be news-only, award announcements, or clearly outside ecology and conservation.
+todo_extraction_rules:
+  - Surface tasks with deadlines, meeting prep, manuscript revisions, student support, grant actions, and collaborator follow-ups.
+  - Prefer concrete actions over vague ideas.
+  - Include likely owner guesses only when there is clear textual evidence.
+  - Mark tasks as urgent when the note implies immediate action, a deadline, or blocking dependency.
+obsidian_vault_paths:
+  - C:\Users\Tim\Obsidian\LabVault

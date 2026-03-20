@@ -1,0 +1,16 @@
+sources:
+  - name: NSERC News
+    type: rss
+    url: https://www.nserc-crsng.gc.ca/rss/news.xml
+    tags: [nserc]
+    max_items: 30
+  - name: SSHRC News
+    type: rss
+    url: https://www.sshrc-crsh.gc.ca/rss/news.xml
+    tags: [sshrc]
+    max_items: 30
+  - name: CFI News
+    type: rss
+    url: https://www.innovation.ca/news/feed/
+    tags: [cfi]
+    max_items: 30
