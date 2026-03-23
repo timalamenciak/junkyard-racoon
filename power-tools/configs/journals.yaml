@@ -1,14 +1,14 @@
 lookback_hours: 48
 feeds:
   - name: Conservation Biology
-    url: https://conbio.onlinelibrary.wiley.com/feed/15231739/most-recent
+    url: https://onlinelibrary.wiley.com/action/showFeed?jc=15231739&type=etoc&feed=rss
     tags: [conservation]
     max_items: 40
   - name: Restoration Ecology
-    url: https://onlinelibrary.wiley.com/feed/1526100x/most-recent
+    url: https://onlinelibrary.wiley.com/action/showFeed?jc=1526100x&type=etoc&feed=rss
     tags: [restoration]
     max_items: 40
   - name: Ecology and Society
-    url: https://www.ecologyandsociety.org/viewissue.php?sf=rss
+    url: https://ecologyandsociety.org/issue/feed/rss2
     tags: [social-ecological]
     max_items: 40

@@ -13,6 +13,8 @@ from common.io_utils import CONFIGS_DIR, INGEST_DIR, PROCESSING_DIR, dump_json, 
 from common.llm import chat_completion, extract_json_payload
 from common.runtime import is_test_mode
 
+BATCH_SIZE = 10
+
 
 def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     priority_areas = "\n".join(f"- {item}" for item in lab_profile.get("grant_priority_areas", []))
@@ -47,6 +49,29 @@ def score_grants_for_test_mode(grants: list[dict]) -> list[dict]:
     return grants
 
 
+def score_grants_llm(grants: list[dict], lab_profile: dict) -> None:
+    """Score grants in batches, writing scores back in-place. Logs warnings on partial failures."""
+    for batch_start in range(0, len(grants), BATCH_SIZE):
+        batch = grants[batch_start : batch_start + BATCH_SIZE]
+        try:
+            response = chat_completion(build_prompt(batch, lab_profile), max_tokens=2600, temperature=0.0)
+            scored = extract_json_payload(response)
+        except Exception as exc:
+            print(
+                f"Warning: LLM scoring failed for grants {batch_start}-{batch_start + len(batch) - 1}: {exc}",
+                file=sys.stderr,
+            )
+            continue
+        for item in scored:
+            local_idx = item.get("index")
+            if isinstance(local_idx, int) and 0 <= local_idx < len(batch):
+                g = grants[batch_start + local_idx]
+                g["relevance_score"] = float(item.get("score", 0.0))
+                g["llm_summary"] = item.get("summary", "")
+                g["rationale"] = item.get("rationale", "")
+                g["next_step"] = item.get("next_step", "")
+
+
 def main() -> None:
     ensure_data_dirs()
     lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
@@ -60,15 +85,7 @@ def main() -> None:
     if is_test_mode():
         grants = score_grants_for_test_mode(grants)
     else:
-        response = chat_completion(build_prompt(grants, lab_profile), max_tokens=2600, temperature=0.0)
-        scored = extract_json_payload(response)
-        for item in scored:
-            idx = item.get("index")
-            if isinstance(idx, int) and 0 <= idx < len(grants):
-                grants[idx]["relevance_score"] = float(item.get("score", 0.0))
-                grants[idx]["llm_summary"] = item.get("summary", "")
-                grants[idx]["rationale"] = item.get("rationale", "")
-                grants[idx]["next_step"] = item.get("next_step", "")
+        score_grants_llm(grants, lab_profile)
 
     relevant = [item for item in grants if item.get("relevance_score", 0.0) >= float(lab_profile.get("grant_relevance_threshold", 0.65))]
     relevant.sort(key=lambda item: item.get("relevance_score", 0.0), reverse=True)

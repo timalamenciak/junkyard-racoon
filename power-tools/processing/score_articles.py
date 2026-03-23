@@ -13,6 +13,8 @@ from common.io_utils import CONFIGS_DIR, INGEST_DIR, PROCESSING_DIR, dump_json, 
 from common.llm import chat_completion, extract_json_payload
 from common.runtime import is_test_mode
 
+BATCH_SIZE = 10
+
 
 def build_prompt(articles: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     interests = "\n".join(f"- {item}" for item in lab_profile.get("research_interests", []))
@@ -47,6 +49,29 @@ def score_articles_for_test_mode(articles: list[dict]) -> list[dict]:
     return articles
 
 
+def score_articles_llm(articles: list[dict], lab_profile: dict) -> None:
+    """Score articles in batches, writing scores back in-place. Logs warnings on partial failures."""
+    for batch_start in range(0, len(articles), BATCH_SIZE):
+        batch = articles[batch_start : batch_start + BATCH_SIZE]
+        try:
+            response = chat_completion(build_prompt(batch, lab_profile), max_tokens=3000, temperature=0.0)
+            scored = extract_json_payload(response)
+        except Exception as exc:
+            print(
+                f"Warning: LLM scoring failed for articles {batch_start}-{batch_start + len(batch) - 1}: {exc}",
+                file=sys.stderr,
+            )
+            continue
+        for item in scored:
+            local_idx = item.get("index")
+            if isinstance(local_idx, int) and 0 <= local_idx < len(batch):
+                a = articles[batch_start + local_idx]
+                a["relevance_score"] = float(item.get("score", 0.0))
+                a["llm_summary"] = item.get("summary", "")
+                a["rationale"] = item.get("rationale", "")
+                a["recommended_action"] = item.get("recommended_action", "")
+
+
 def main() -> None:
     ensure_data_dirs()
     lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
@@ -60,15 +85,7 @@ def main() -> None:
     if is_test_mode():
         articles = score_articles_for_test_mode(articles)
     else:
-        response = chat_completion(build_prompt(articles, lab_profile), max_tokens=3000, temperature=0.0)
-        scored = extract_json_payload(response)
-        for item in scored:
-            idx = item.get("index")
-            if isinstance(idx, int) and 0 <= idx < len(articles):
-                articles[idx]["relevance_score"] = float(item.get("score", 0.0))
-                articles[idx]["llm_summary"] = item.get("summary", "")
-                articles[idx]["rationale"] = item.get("rationale", "")
-                articles[idx]["recommended_action"] = item.get("recommended_action", "")
+        score_articles_llm(articles, lab_profile)
 
     relevant = [a for a in articles if a.get("relevance_score", 0.0) >= float(lab_profile.get("article_relevance_threshold", 0.75))]
     relevant.sort(key=lambda item: item.get("relevance_score", 0.0), reverse=True)

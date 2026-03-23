@@ -19,6 +19,9 @@ def main() -> None:
     if not digest:
         raise SystemExit("No digest found. Run processing/daily_digest.py first.")
 
+    markdown = digest.get("markdown", "")
+    if not markdown:
+        raise SystemExit("Digest has no markdown content. Run processing/daily_digest.py first.")
     messages = [
         {
             "role": "system",
@@ -28,7 +31,7 @@ def main() -> None:
                 "Keep it clear, warm, and practical."
             ),
         },
-        {"role": "user", "content": digest["markdown"]},
+        {"role": "user", "content": markdown},
     ]
     if is_test_mode():
         script = (

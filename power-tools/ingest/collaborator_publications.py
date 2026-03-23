@@ -31,8 +31,9 @@ def find_author_id(name: str) -> str | None:
 
 def fetch_recent_works(author_id: str, days_back: int) -> list[dict]:
     cutoff = (datetime.date.today() - datetime.timedelta(days=days_back)).isoformat()
-    query = urllib.parse.quote(f"authorships.author.id:{author_id},from_publication_date:{cutoff}")
-    payload = fetch_json(f"{OPENALEX_WORKS_URL}?filter={query}&per-page=25")
+    # OpenAlex filter syntax uses ':' and ',' as operators — preserve them unencoded.
+    filter_str = f"authorships.author.id:{author_id},from_publication_date:{cutoff}"
+    payload = fetch_json(f"{OPENALEX_WORKS_URL}?filter={urllib.parse.quote(filter_str, safe=':,/')}&per-page=25")
     items = []
     for work in payload.get("results", []):
         items.append(

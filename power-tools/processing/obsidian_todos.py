@@ -15,6 +15,7 @@ from common.runtime import is_test_mode
 
 
 MAX_NOTE_CHARS = 6000
+BATCH_SIZE = 10
 
 
 def sample_items() -> list[dict]:
@@ -92,27 +93,41 @@ def main() -> None:
             "Return only JSON as a list of objects with keys: index, priority, task, owner_guess, deadline_guess, rationale.\n"
             "Priority must be urgent, high, medium, or low."
         )
-        user = f"Extraction rules:\n{extraction_rules}\n\nNotes:\n\n" + "\n\n".join(prompt_notes)
-        response = chat_completion(
-            [{"role": "system", "content": system}, {"role": "user", "content": user}],
-            max_tokens=3200,
-            temperature=0.0,
-        )
-        parsed = extract_json_payload(response)
-        for item in parsed:
-            idx = item.get("index")
-            if isinstance(idx, int) and 0 <= idx < len(source_notes):
-                extracted_items.append(
-                    {
-                        "vault": source_notes[idx].get("vault", ""),
-                        "note": source_notes[idx].get("note", ""),
-                        "priority": item.get("priority", "medium"),
-                        "task": item.get("task", ""),
-                        "owner_guess": item.get("owner_guess", ""),
-                        "deadline_guess": item.get("deadline_guess", ""),
-                        "rationale": item.get("rationale", ""),
-                    }
+        for batch_start in range(0, len(source_notes), BATCH_SIZE):
+            batch_notes = source_notes[batch_start : batch_start + BATCH_SIZE]
+            batch_prompts = [
+                f"[{i}] Note: {note['note']}\nContent:\n{note['content']}"
+                for i, note in enumerate(batch_notes)
+            ]
+            user = f"Extraction rules:\n{extraction_rules}\n\nNotes:\n\n" + "\n\n".join(batch_prompts)
+            try:
+                response = chat_completion(
+                    [{"role": "system", "content": system}, {"role": "user", "content": user}],
+                    max_tokens=3200,
+                    temperature=0.0,
                 )
+                parsed = extract_json_payload(response)
+            except Exception as exc:
+                print(
+                    f"Warning: LLM todo extraction failed for notes {batch_start}-{batch_start + len(batch_notes) - 1}: {exc}",
+                    file=sys.stderr,
+                )
+                continue
+            for item in parsed:
+                local_idx = item.get("index")
+                if isinstance(local_idx, int) and 0 <= local_idx < len(batch_notes):
+                    note = batch_notes[local_idx]
+                    extracted_items.append(
+                        {
+                            "vault": note.get("vault", ""),
+                            "note": note.get("note", ""),
+                            "priority": item.get("priority", "medium"),
+                            "task": item.get("task", ""),
+                            "owner_guess": item.get("owner_guess", ""),
+                            "deadline_guess": item.get("deadline_guess", ""),
+                            "rationale": item.get("rationale", ""),
+                        }
+                    )
 
     dump_json(
         PROCESSING_DIR / "obsidian_todos.json",

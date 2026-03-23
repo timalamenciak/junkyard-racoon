@@ -34,19 +34,27 @@ def fetch_json(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_
     return json.loads(fetch_bytes(url, timeout=timeout, retries=retries))
 
 
-def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: int = DEFAULT_TIMEOUT) -> Any:
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        detail = f"{exc.code} {exc.reason}"
-        if body.strip():
-            detail = f"{detail}: {body[:400]}"
-        raise RuntimeError(f"POST {url} failed with HTTP {detail}") from exc
+def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES) -> Any:
+    last_error: Exception | None = None
+    for attempt in range(1, retries + 1):
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            detail = f"{exc.code} {exc.reason}"
+            if body.strip():
+                detail = f"{detail}: {body[:400]}"
+            raise RuntimeError(f"POST {url} failed with HTTP {detail}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = exc
+            if attempt == retries:
+                break
+            time.sleep(DEFAULT_BACKOFF * attempt)
+    raise RuntimeError(f"POST {url} failed: {last_error}")

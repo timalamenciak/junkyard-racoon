@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.nserc-crsng.gc.ca)",
+      "WebFetch(domain:ecologyandsociety.org)",
+      "WebFetch(domain:www.sshrc-crsh.gc.ca)",
+      "WebFetch(domain:www.innovation.ca)",
+      "WebFetch(domain:sshrc-crsh.canada.ca)",
+      "WebFetch(domain:nserc-crsng.canada.ca)",
+      "WebFetch(domain:onlinelibrary.wiley.com)",
+      "WebFetch(domain:www.canada.ca)"
+    ]
+  }
+}
