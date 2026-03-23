@@ -32,9 +32,12 @@ def main() -> None:
     lines.append(f"High-fit grants: {len(grants)}")
     lines.append(f"Priority tasks: {len(todos)}")
 
-    if publish.get("page_url"):
+    if publish.get("articles_url") or publish.get("grants_url") or publish.get("tasks_url"):
         lines.append("")
-        lines.append(f"BookStack: {publish['page_url']}")
+        lines.append("BookStack:")
+        for label, key in [("Articles", "articles_url"), ("Grants", "grants_url"), ("Tasks", "tasks_url")]:
+            if publish.get(key):
+                lines.append(f"  {label}: {publish[key]}")
 
     rendered = "\n".join(lines)
     print(rendered)

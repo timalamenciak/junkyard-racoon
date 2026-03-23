@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Publish the generated digest markdown to BookStack."""
+"""Publish digest sections to separate BookStack pages."""
 
 from __future__ import annotations
 
 import json
 import sys
-import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -15,11 +14,100 @@ from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, load_json, load_yaml
 from common.runtime import is_test_mode
 
 
-def headers(config: dict) -> dict[str, str]:
+def auth_headers(config: dict) -> dict[str, str]:
     return {
         "Authorization": f"Token {config['token_id']}:{config['token_secret']}",
         "Content-Type": "application/json",
     }
+
+
+def put_page(base_url: str, page_id: int, name: str, markdown: str, hdrs: dict[str, str]) -> dict:
+    req = urllib.request.Request(
+        f"{base_url}/api/pages/{page_id}",
+        data=json.dumps({"name": name, "markdown": markdown}).encode("utf-8"),
+        headers=hdrs,
+        method="PUT",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read())
+
+
+def build_articles_markdown(digest: dict) -> str:
+    date_str = digest.get("date", "unknown")
+    lines = [f"# Journal Articles — {date_str}", ""]
+    articles = digest.get("relevant_articles", [])
+    if articles:
+        for a in articles:
+            lines.append(f"## {a.get('title', '')}")
+            lines.append(f"**Relevance:** {int(a.get('relevance_score', 0) * 100)}%  ")
+            lines.append(f"**Feed:** {a.get('feed', '')}  ")
+            if a.get("llm_summary"):
+                lines.append(f"\n{a['llm_summary']}")
+            if a.get("rationale"):
+                lines.append(f"\n*{a['rationale']}*")
+            if a.get("recommended_action"):
+                lines.append(f"\n**Recommended action:** {a['recommended_action']}")
+            lines.append(f"\n{a.get('link', '')}")
+            lines.append("")
+    else:
+        lines.append("No high-relevance articles today.")
+        lines.append("")
+
+    pubs = digest.get("collaborator_publications", [])
+    lines.append("# Collaborator Publications")
+    lines.append("")
+    if pubs:
+        for p in pubs:
+            lines.append(f"- **{p.get('collaborator', '')}**: {p.get('title', '')}  ")
+            lines.append(f"  {p.get('link', '')}")
+    else:
+        lines.append("No recent collaborator publications.")
+    return "\n".join(lines) + "\n"
+
+
+def build_grants_markdown(digest: dict) -> str:
+    date_str = digest.get("date", "unknown")
+    lines = [f"# Grant Opportunities — {date_str}", ""]
+    grants = digest.get("relevant_grants", [])
+    if grants:
+        for g in grants:
+            lines.append(f"## {g.get('title', '')}")
+            lines.append(f"**Fit:** {int(g.get('relevance_score', 0) * 100)}%  ")
+            lines.append(f"**Source:** {g.get('source', '')}  ")
+            if g.get("llm_summary"):
+                lines.append(f"\n{g['llm_summary']}")
+            if g.get("rationale"):
+                lines.append(f"\n*{g['rationale']}*")
+            if g.get("next_step"):
+                lines.append(f"\n**Next step:** {g['next_step']}")
+            lines.append(f"\n{g.get('link', '')}")
+            lines.append("")
+    else:
+        lines.append("No high-fit grant opportunities today.")
+    return "\n".join(lines) + "\n"
+
+
+def build_tasks_markdown(digest: dict) -> str:
+    date_str = digest.get("date", "unknown")
+    lines = [f"# Project Tasks — {date_str}", ""]
+    todos = digest.get("prioritized_todos", [])
+    if todos:
+        for t in todos:
+            priority = t.get("priority", "medium").upper()
+            lines.append(f"## [{priority}] {t.get('task', '')}")
+            if t.get("owner_guess"):
+                lines.append(f"**Owner:** {t['owner_guess']}  ")
+            if t.get("deadline_guess"):
+                lines.append(f"**Deadline cue:** {t['deadline_guess']}  ")
+            if t.get("rationale"):
+                lines.append(f"\n{t['rationale']}")
+            if t.get("note"):
+                lines.append(f"\n{t['note']}")
+            lines.append(f"\n*From: {t.get('note', t.get('vault', ''))}*")
+            lines.append("")
+    else:
+        lines.append("No priority tasks extracted today.")
+    return "\n".join(lines) + "\n"
 
 
 def main() -> None:
@@ -29,48 +117,46 @@ def main() -> None:
 
     output_cfg = load_yaml(CONFIGS_DIR / "output.yaml")
     bookstack = output_cfg.get("bookstack", {})
-    page_name = f"Daily Lab Digest {digest.get('date', 'unknown')}"
+
+    page_ids = bookstack.get("pages", {})
+    articles_page_id = page_ids.get("articles")
+    grants_page_id = page_ids.get("grants")
+    tasks_page_id = page_ids.get("tasks")
+
+    missing = [k for k, v in [("articles", articles_page_id), ("grants", grants_page_id), ("tasks", tasks_page_id)] if not v]
+    if missing:
+        raise SystemExit(f"bookstack.pages.{{{', '.join(missing)}}} not set in output.yaml")
+
+    date_str = digest.get("date", "unknown")
+    base_url = bookstack["url"].rstrip("/")
 
     if is_test_mode():
         payload_out = {
-            "page_url": f"{bookstack.get('url', 'https://example.org').rstrip('/')}/books/sample/pages/{page_name.lower().replace(' ', '-')}",
-            "page_name": page_name,
+            "articles_url": f"{base_url}/pages/{articles_page_id}",
+            "grants_url": f"{base_url}/pages/{grants_page_id}",
+            "tasks_url": f"{base_url}/pages/{tasks_page_id}",
             "test_mode": True,
         }
         (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(payload_out, indent=2), encoding="utf-8")
-        print(payload_out["page_url"])
+        for url in [payload_out["articles_url"], payload_out["grants_url"], payload_out["tasks_url"]]:
+            print(url)
         return
 
-    search_url = f"{bookstack['url']}/api/search?query={urllib.parse.quote(page_name)}&type=page"
-    req = urllib.request.Request(search_url, headers=headers(bookstack))
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        results = json.loads(resp.read())
-    pages = results.get("data", [])
-    existing = next((page for page in pages if page.get("name") == page_name), None)
+    hdrs = auth_headers(bookstack)
+    results = {}
 
-    payload = {
-        "name": page_name,
-        "markdown": digest["markdown"],
-        "book_id": bookstack["book_id"],
-    }
-    if bookstack.get("chapter_id"):
-        payload["chapter_id"] = bookstack["chapter_id"]
+    for label, page_id, name, markdown in [
+        ("articles", articles_page_id, f"Journal Articles — {date_str}", build_articles_markdown(digest)),
+        ("grants",   grants_page_id,   f"Grant Opportunities — {date_str}", build_grants_markdown(digest)),
+        ("tasks",    tasks_page_id,    f"Project Tasks — {date_str}", build_tasks_markdown(digest)),
+    ]:
+        result = put_page(base_url, page_id, name, markdown, hdrs)
+        url = f"{base_url}/books/{result.get('book_slug', '')}/pages/{result.get('slug', '')}"
+        results[f"{label}_url"] = url
+        print(f"{label}: {url}")
 
-    if existing:
-        api_url = f"{bookstack['url']}/api/pages/{existing['id']}"
-        method = "PUT"
-    else:
-        api_url = f"{bookstack['url']}/api/pages"
-        method = "POST"
-
-    req = urllib.request.Request(api_url, data=json.dumps(payload).encode("utf-8"), headers=headers(bookstack), method=method)
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read())
-
-    page_url = f"{bookstack['url']}/books/{result.get('book_slug', '')}/pages/{result.get('slug', '')}"
-    payload_out = {"page_url": page_url, "page_name": page_name, "test_mode": False}
-    (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(payload_out, indent=2), encoding="utf-8")
-    print(page_url)
+    results["test_mode"] = False
+    (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -4,8 +4,10 @@ bookstack:
   url: https://your-bookstack-instance
   token_id: your-token-id-here
   token_secret: your-token-secret-here
-  book_id: 1
-  chapter_id:  # optional
+  pages:
+    articles: 1  # page ID for journal articles + collaborator publications
+    grants: 2    # page ID for grant opportunities
+    tasks: 3     # page ID for project tasks
 matrix:
   summary_file: matrix_digest.txt
 podcast:
