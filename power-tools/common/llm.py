@@ -4,26 +4,37 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from common.http_utils import post_json
 from common.io_utils import CONFIGS_DIR, load_yaml
-
-
-JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")
-JSON_OBJECT_RE = re.compile(r"\{[\s\S]*\}")
-
 
 def load_llm_config() -> dict[str, Any]:
     return load_yaml(CONFIGS_DIR / "llm.yaml")
 
 
+def normalize_chat_endpoint(endpoint: str) -> str:
+    endpoint = endpoint.strip().rstrip("/")
+    if not endpoint:
+        return endpoint
+
+    parsed = urlparse(endpoint)
+    path = parsed.path.rstrip("/")
+    if path.endswith("/chat/completions") or path.endswith("/messages") or path.endswith("/completions"):
+        return endpoint
+    if path.endswith("/v1"):
+        return f"{endpoint}/chat/completions"
+    if path:
+        return endpoint
+    return f"{endpoint}/v1/chat/completions"
+
+
 def chat_completion(messages: list[dict[str, str]], max_tokens: int = 1200, temperature: float = 0.0) -> str:
     config = load_llm_config()
     provider = config.get("provider", "openai_compatible")
-    endpoint = config.get("endpoint", "")
+    endpoint = normalize_chat_endpoint(config.get("endpoint", ""))
     api_key = config.get("api_key", "")
     model = config.get("model", "")
 
@@ -46,6 +57,40 @@ def chat_completion(messages: list[dict[str, str]], max_tokens: int = 1200, temp
     return response["choices"][0]["message"]["content"]
 
 
+def _extract_balanced_json_block(text: str, opener: str, closer: str) -> str | None:
+    start = text.find(opener)
+    while start != -1:
+        depth = 0
+        in_string = False
+        escaped = False
+        for idx in range(start, len(text)):
+            char = text[idx]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+            elif char == opener:
+                depth += 1
+            elif char == closer:
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : idx + 1]
+                    try:
+                        json.loads(candidate)
+                        return candidate
+                    except json.JSONDecodeError:
+                        break
+        start = text.find(opener, start + 1)
+    return None
+
+
 def extract_json_payload(raw: str) -> Any:
     text = raw.strip()
     if text.startswith("```"):
@@ -56,10 +101,10 @@ def extract_json_payload(raw: str) -> Any:
             lines = lines[:-1]
         text = "\n".join(lines).strip()
 
-    array_match = JSON_ARRAY_RE.search(text)
-    if array_match:
-        return json.loads(array_match.group(0))
-    object_match = JSON_OBJECT_RE.search(text)
-    if object_match:
-        return json.loads(object_match.group(0))
+    array_block = _extract_balanced_json_block(text, "[", "]")
+    if array_block is not None:
+        return json.loads(array_block)
+    object_block = _extract_balanced_json_block(text, "{", "}")
+    if object_block is not None:
+        return json.loads(object_block)
     return json.loads(text)

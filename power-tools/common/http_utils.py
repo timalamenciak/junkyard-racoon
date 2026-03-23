@@ -41,5 +41,12 @@ def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeou
         headers=headers,
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        detail = f"{exc.code} {exc.reason}"
+        if body.strip():
+            detail = f"{detail}: {body[:400]}"
+        raise RuntimeError(f"POST {url} failed with HTTP {detail}") from exc
