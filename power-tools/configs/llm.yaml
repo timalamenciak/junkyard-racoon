@@ -1,5 +1,0 @@
-provider: local
-endpoint: http://racoon-ai:8080/v1/chat/completions
-api_key: 031f487d772326cdc4f73a91a87915782893e072560a08c4a4c095c5b1cccc91
-model: qwen2.5-3b
-timeout: 900

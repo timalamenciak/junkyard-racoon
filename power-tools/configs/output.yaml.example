@@ -1,0 +1,12 @@
+# Copy this file to output.yaml and fill in real values.
+# output.yaml is gitignored — never commit the real file.
+bookstack:
+  url: https://your-bookstack-instance
+  token_id: your-token-id-here
+  token_secret: your-token-secret-here
+  book_id: 1
+  chapter_id:  # optional
+matrix:
+  summary_file: matrix_digest.txt
+podcast:
+  script_file: podcast_script.md

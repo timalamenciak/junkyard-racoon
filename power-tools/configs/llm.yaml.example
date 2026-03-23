@@ -1,0 +1,7 @@
+# Copy this file to llm.yaml and fill in real values.
+# llm.yaml is gitignored — never commit the real file.
+provider: local  # local | groq | openai_compatible
+endpoint: http://your-llm-host/v1/chat/completions
+api_key: your-api-key-here
+model: your-model-name
+timeout: 900
