@@ -19,6 +19,14 @@ ORCID_API_BASE = "https://pub.orcid.org/v3.0"
 ORCID_HEADERS = {"Accept": "application/json"}
 
 
+def clean_str(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    return str(value).strip()
+
+
 def fetch_orcid_works(orcid_id: str, days_back: int) -> list[dict]:
     """Return works published within the last *days_back* days for *orcid_id*."""
     cutoff = datetime.date.today() - datetime.timedelta(days=days_back)
@@ -102,8 +110,14 @@ def main() -> None:
     days_back = int(config.get("days_back", 14))
 
     for collaborator in config.get("collaborators", []):
-        name = collaborator["name"]
-        orcid_id = collaborator.get("orcid", "").strip()
+        if not isinstance(collaborator, dict):
+            print("[collaborator_publications] WARNING: collaborator entry is not a mapping, skipping", file=sys.stderr)
+            continue
+        name = clean_str(collaborator.get("name"))
+        if not name:
+            print("[collaborator_publications] WARNING: collaborator entry missing name, skipping", file=sys.stderr)
+            continue
+        orcid_id = clean_str(collaborator.get("orcid"))
         if not orcid_id:
             print(f"[collaborator_publications] WARNING: no orcid set for {name!r}, skipping", file=sys.stderr)
             continue
