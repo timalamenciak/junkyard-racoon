@@ -1,4 +1,67 @@
 # NSERC, SSHRC, and CFI retired their RSS feeds in 2025 when migrating to canada.ca.
 # No replacement RSS feeds exist for these sources as of March 2026.
 # Add new RSS sources below when available.
-sources: []
+sources:
+  # --- Canadian / Canada-relevant funding aggregators ---
+  - name: Research Professional (Canada funding calls)
+    url: https://www.researchprofessionalnews.com/rss/funding/
+    tags: [grants, canada, research]
+    max_items: 40
+
+  - name: University Affairs – Research & Funding
+    url: https://www.universityaffairs.ca/category/research/rss/
+    tags: [grants, canada, academia]
+    max_items: 40
+
+  # --- International but highly relevant to Canadian ecologists ---
+  - name: Horizon Europe – Environment Calls (CORDIS)
+    url: https://cordis.europa.eu/search/en?q=contenttype%3D'call'%20AND%20(programme%2Fcode%3D'HORIZON')&format=rss
+    tags: [grants, environment, international]
+    max_items: 40
+
+  - name: NIH Funding Opportunities (Environmental Health)
+    url: https://grants.nih.gov/grants/guide/rss/PA.xml
+    tags: [grants, health, environment]
+    max_items: 40
+
+  - name: Grants.gov (Environment & Natural Resources)
+    url: https://www.grants.gov/rss.xml
+    tags: [grants, environment]
+    max_items: 40
+
+  # --- Foundations & NGOs (often fund ecology / conservation) ---
+  - name: Belmont Forum Opportunities
+    url: https://belmontforum.org/news/feed/
+    tags: [grants, climate, international]
+    max_items: 40
+
+  - name: Gordon and Betty Moore Foundation – News
+    url: https://www.moore.org/rss
+    tags: [grants, conservation]
+    max_items: 40
+
+  - name: Packard Foundation – Science & Conservation
+    url: https://www.packard.org/insights/feed/
+    tags: [grants, conservation]
+    max_items: 40
+
+  - name: Wildlife Conservation Society – Funding/News
+    url: https://www.wcs.org/rss
+    tags: [grants, conservation]
+    max_items: 40
+
+  # --- Canadian workaround layer (indirect signals) ---
+  - name: Mitacs Opportunities & News
+    url: https://www.mitacs.ca/en/newsroom/rss.xml
+    tags: [grants, canada, training]
+    max_items: 40
+
+  - name: Genome Canada News (Funding Announcements)
+    url: https://www.genomecanada.ca/en/rss.xml
+    tags: [grants, canada]
+    max_items: 40
+
+  - name: Environment and Climate Change Canada News
+    url: https://www.canada.ca/en/environment-climate-change/news/rss.xml
+    tags: [policy, canada, grants]
+    max_items: 40

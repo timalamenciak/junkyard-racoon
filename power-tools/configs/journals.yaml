@@ -4,11 +4,158 @@ feeds:
     url: https://onlinelibrary.wiley.com/action/showFeed?jc=15231739&type=etoc&feed=rss
     tags: [conservation]
     max_items: 40
+
   - name: Restoration Ecology
     url: https://onlinelibrary.wiley.com/action/showFeed?jc=1526100x&type=etoc&feed=rss
     tags: [restoration]
     max_items: 40
+
   - name: Ecology and Society
     url: https://ecologyandsociety.org/issue/feed/rss2
     tags: [social-ecological]
+    max_items: 40
+
+  # --- Conservation Biology & Ecology ---
+  - name: Biological Conservation
+    url: https://www.sciencedirect.com/journal/biological-conservation/rss
+    tags: [conservation]
+    max_items: 40
+
+  - name: Conservation Letters
+    url: https://conbio.onlinelibrary.wiley.com/action/showFeed?jc=1755263x&type=etoc&feed=rss
+    tags: [conservation, policy]
+    max_items: 40
+
+  - name: Global Change Biology
+    url: https://onlinelibrary.wiley.com/action/showFeed?jc=13652486&type=etoc&feed=rss
+    tags: [ecology, climate]
+    max_items: 40
+
+  - name: Journal of Applied Ecology
+    url: https://besjournals.onlinelibrary.wiley.com/action/showFeed?jc=13652664&type=etoc&feed=rss
+    tags: [ecology, applied]
+    max_items: 40
+
+  - name: Ecological Applications
+    url: https://esajournals.onlinelibrary.wiley.com/action/showFeed?jc=19395582&type=etoc&feed=rss
+    tags: [ecology, applied]
+    max_items: 40
+
+  - name: Ecosphere
+    url: https://esajournals.onlinelibrary.wiley.com/action/showFeed?jc=21508925&type=etoc&feed=rss
+    tags: [ecology]
+    max_items: 40
+
+  # --- Restoration Ecology ---
+  - name: Ecological Restoration
+    url: https://muse.jhu.edu/feed/eco
+    tags: [restoration, applied]
+    max_items: 40
+
+  - name: Restoration Science (Springer)
+    url: https://link.springer.com/journal/10021.rss
+    tags: [restoration]
+    max_items: 40
+
+  # --- Social-Ecological Systems ---
+  - name: People and Nature
+    url: https://besjournals.onlinelibrary.wiley.com/action/showFeed?jc=25758314&type=etoc&feed=rss
+    tags: [social-ecological]
+    max_items: 40
+
+  - name: Sustainability Science
+    url: https://link.springer.com/journal/11625.rss
+    tags: [social-ecological, sustainability]
+    max_items: 40
+
+  - name: Ambio
+    url: https://link.springer.com/journal/13280.rss
+    tags: [social-ecological, policy]
+    max_items: 40
+
+  - name: Global Environmental Change
+    url: https://www.sciencedirect.com/journal/global-environmental-change/rss
+    tags: [social-ecological, climate, policy]
+    max_items: 40
+
+  - name: Society & Natural Resources
+    url: https://www.tandfonline.com/feed/rss/usnr20
+    tags: [social-ecological]
+    max_items: 40
+
+  # --- Policy & Grant-Relevant Journals ---
+  - name: Environmental Science & Policy
+    url: https://www.sciencedirect.com/journal/environmental-science-and-policy/rss
+    tags: [policy, applied]
+    max_items: 40
+
+  - name: Conservation Science and Practice
+    url: https://conbio.onlinelibrary.wiley.com/action/showFeed?jc=25784854&type=etoc&feed=rss
+    tags: [conservation, applied, policy]
+    max_items: 40
+
+  - name: Environmental Research Letters
+    url: https://iopscience.iop.org/journal/1748-9326/rss
+    tags: [climate, policy]
+    max_items: 40
+
+  - name: One Earth
+    url: https://www.cell.com/one-earth/rss
+    tags: [sustainability, policy]
+    max_items: 40
+
+  - name: npj Biodiversity
+    url: https://www.nature.com/npj-biodiversity/rss
+    tags: [conservation, policy]
+    max_items: 40
+
+  - name: Land Use Policy
+    url: https://www.sciencedirect.com/journal/land-use-policy/rss
+    tags: [policy, land-use]
+    max_items: 40
+
+  - name: Journal of Environmental Management
+    url: https://www.sciencedirect.com/journal/journal-of-environmental-management/rss
+    tags: [management, applied]
+    max_items: 40
+
+  - name: Environmental Management
+    url: https://link.springer.com/journal/267.rss
+    tags: [management, policy]
+    max_items: 40
+
+  - name: Ecosystem Services
+    url: https://www.sciencedirect.com/journal/ecosystem-services/rss
+    tags: [ecosystem-services, policy]
+    max_items: 40
+
+  - name: Frontiers in Ecology and Evolution
+    url: https://www.frontiersin.org/journals/ecology-and-evolution/rss
+    tags: [ecology]
+    max_items: 40
+
+  # --- Generalist / High-impact ---
+  - name: Nature
+    url: https://www.nature.com/nature.rss
+    tags: [general]
+    max_items: 40
+
+  - name: Science
+    url: https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science
+    tags: [general]
+    max_items: 40
+
+  - name: PLOS ONE
+    url: https://journals.plos.org/plosone/feed/rss
+    tags: [general]
+    max_items: 40
+
+  - name: Proceedings of the National Academy of Sciences (PNAS)
+    url: https://www.pnas.org/rss/current.xml
+    tags: [general]
+    max_items: 40
+
+  - name: Frontiers in Ecology and the Environment
+    url: https://esajournals.onlinelibrary.wiley.com/action/showFeed?jc=15409295&type=etoc&feed=rss
+    tags: [ecology, policy]
     max_items: 40
