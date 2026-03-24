@@ -93,9 +93,15 @@ def main() -> None:
     updated_article_keys = set(seen_article_keys)
     seen_links = set()
 
+    failed_feeds: list[str] = []
     for feed in config.get("feeds", []):
         feed_name = feed.get("name", feed.get("url", "unknown"))
-        payload = fetch_bytes(feed["url"])
+        try:
+            payload = fetch_bytes(feed["url"])
+        except Exception as exc:
+            print(f"[rss_journals] WARNING: skipping {feed_name!r}: {exc}", file=sys.stderr)
+            failed_feeds.append(feed_name)
+            continue
         parsed = feedparser.parse(payload)
         for entry in parsed.entries[: int(feed.get("max_items", 50))]:
             published = parse_date(entry)
@@ -140,6 +146,8 @@ def main() -> None:
         },
     )
     print(f"Wrote {len(items)} journal articles to {INGEST_DIR / 'journal_articles.json'}")
+    if failed_feeds:
+        print(f"[rss_journals] {len(failed_feeds)} feed(s) unavailable: {', '.join(failed_feeds)}", file=sys.stderr)
 
 
 if __name__ == "__main__":

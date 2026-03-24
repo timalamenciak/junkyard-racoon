@@ -15,11 +15,14 @@ DEFAULT_RETRIES = 3
 DEFAULT_BACKOFF = 2
 
 
-def fetch_bytes(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES) -> bytes:
+def fetch_bytes(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES, extra_headers: dict[str, str] | None = None) -> bytes:
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "power-tools/1.0"})
+            hdrs = {"User-Agent": "power-tools/1.0"}
+            if extra_headers:
+                hdrs.update(extra_headers)
+            req = urllib.request.Request(url, headers=hdrs)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.read()
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
@@ -30,8 +33,8 @@ def fetch_bytes(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT
     raise RuntimeError(f"request failed for {url}: {last_error}")
 
 
-def fetch_json(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES) -> Any:
-    return json.loads(fetch_bytes(url, timeout=timeout, retries=retries))
+def fetch_json(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES, extra_headers: dict[str, str] | None = None) -> Any:
+    return json.loads(fetch_bytes(url, timeout=timeout, retries=retries, extra_headers=extra_headers))
 
 
 def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES) -> Any:

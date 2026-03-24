@@ -1,24 +1,22 @@
 days_back: 14
 collaborators:
   - name: Ryan Hodgson
-    openalex_author_id: https://openalex.org/A5080425877
+    orcid:   # e.g. 0000-0000-0000-0000
   - name: Steven A. Robinson
-    openalex_author_id: https://openalex.org/A5125391470
+    orcid:
   - name: Amélie Boutin
-    openalex_author_id: https://openalex.org/A5104297431
+    orcid:
   - name: Felix K. Chan
-    openalex_author_id: https://openalex.org/A5125396149
+    orcid:
   - name: Rachel T. Buxton
-    openalex_author_id: https://openalex.org/A5125418520
+    orcid:
   - name: Dalal E. L. Hanna
-    openalex_author_id: https://openalex.org/A5125400806
+    orcid:
   - name: J. Harry Caufield
-    openalex_author_id: https://openalex.org/A5125692604
+    orcid:
   - name: Joseph R. Bennett
-    openalex_author_id: https://openalex.org/A5125431405
-  - name: Joseph R. Bennett
-    openalex_author_id: https://openalex.org/A5125764464
+    orcid:   # verify correct ID — previously had two OpenAlex entries
   - name: Stephen D. Murphy
-    openalex_author_id: https://openalex.org/A5016767583
+    orcid:
   - name: William J. Sutherland
-    openalex_author_id: https://openalex.org/A5077493578
+    orcid:

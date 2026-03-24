@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Poll OpenAlex for collaborator publications."""
+"""Poll ORCID public API for collaborator publications."""
 
 from __future__ import annotations
 
 import datetime
 import sys
-import urllib.parse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -15,35 +14,56 @@ from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs
 from common.runtime import is_test_mode
 
 
-OPENALEX_AUTHOR_URL = "https://api.openalex.org/authors"
-OPENALEX_WORKS_URL = "https://api.openalex.org/works"
+ORCID_API_BASE = "https://pub.orcid.org/v3.0"
+# ORCID public API requires this header to return JSON instead of XML
+ORCID_HEADERS = {"Accept": "application/json"}
 
 
-def find_author_id(name: str) -> str | None:
-    query = urllib.parse.quote(name)
-    payload = fetch_json(f"{OPENALEX_AUTHOR_URL}?search={query}&per-page=5")
-    for result in payload.get("results", []):
-        display_name = (result.get("display_name") or "").lower()
-        if name.lower() in display_name:
-            return result.get("id")
-    return None
+def fetch_orcid_works(orcid_id: str, days_back: int) -> list[dict]:
+    """Return works published within the last *days_back* days for *orcid_id*."""
+    cutoff = datetime.date.today() - datetime.timedelta(days=days_back)
+    data = fetch_json(f"{ORCID_API_BASE}/{orcid_id}/works", extra_headers=ORCID_HEADERS)
 
-
-def fetch_recent_works(author_id: str, days_back: int) -> list[dict]:
-    cutoff = (datetime.date.today() - datetime.timedelta(days=days_back)).isoformat()
-    # OpenAlex filter syntax uses ':' and ',' as operators — preserve them unencoded.
-    filter_str = f"authorships.author.id:{author_id},from_publication_date:{cutoff}"
-    payload = fetch_json(f"{OPENALEX_WORKS_URL}?filter={urllib.parse.quote(filter_str, safe=':,/')}&per-page=25")
     items = []
-    for work in payload.get("results", []):
+    for group in data.get("group", []):
+        summaries = group.get("work-summary", [])
+        if not summaries:
+            continue
+        # ORCID groups the same work from multiple sources; first entry is preferred
+        w = summaries[0]
+
+        # Parse publication date — only year is guaranteed
+        pub_date = w.get("publication-date") or {}
+        year_val  = (pub_date.get("year")  or {}).get("value")
+        month_val = (pub_date.get("month") or {}).get("value") or "01"
+        day_val   = (pub_date.get("day")   or {}).get("value") or "01"
+
+        if not year_val:
+            continue
+        try:
+            pub = datetime.date(int(year_val), int(month_val), int(day_val))
+        except (ValueError, TypeError):
+            continue
+        if pub < cutoff:
+            continue
+
+        title = ((w.get("title") or {}).get("title") or {}).get("value", "")
+
+        # Prefer DOI, fall back to URL recorded in ORCID record
+        ext_ids = (w.get("external-ids") or {}).get("external-id", [])
+        doi = next(
+            (e["external-id-value"] for e in ext_ids if e.get("external-id-type") == "doi"),
+            None,
+        )
+        link = (w.get("url") or {}).get("value") or (f"https://doi.org/{doi}" if doi else "")
+
         items.append(
             {
-                "title": work.get("display_name", ""),
-                "link": work.get("primary_location", {}).get("landing_page_url") or work.get("doi", ""),
-                "published": work.get("publication_date", "unknown"),
-                "authors": [a.get("author", {}).get("display_name", "") for a in work.get("authorships", [])],
-                "source": "openalex",
-                "openalex_id": work.get("id", ""),
+                "title": title,
+                "link": link,
+                "published": pub.isoformat(),
+                "source": "orcid",
+                "orcid_put_code": w.get("put-code"),
             }
         )
     return items
@@ -56,9 +76,8 @@ def sample_items() -> list[dict]:
             "title": "Sample: Participatory restoration planning with decision support agents",
             "link": "https://example.org/sample-collaborator-paper",
             "published": datetime.date.today().isoformat(),
-            "authors": ["Sample Collaborator", "A. Researcher"],
-            "source": "openalex",
-            "openalex_id": "https://openalex.org/Wsample123",
+            "source": "orcid",
+            "orcid_put_code": None,
         }
     ]
 
@@ -84,12 +103,19 @@ def main() -> None:
 
     for collaborator in config.get("collaborators", []):
         name = collaborator["name"]
-        author_id = collaborator.get("openalex_author_id") or find_author_id(name)
-        if not author_id:
-            items.append({"collaborator": name, "error": "openalex_author_not_found"})
+        orcid_id = collaborator.get("orcid", "").strip()
+        if not orcid_id:
+            print(f"[collaborator_publications] WARNING: no orcid set for {name!r}, skipping", file=sys.stderr)
             continue
-        for work in fetch_recent_works(author_id, days_back):
+        try:
+            works = fetch_orcid_works(orcid_id, days_back)
+        except Exception as exc:
+            print(f"[collaborator_publications] WARNING: ORCID fetch failed for {name!r} ({orcid_id}): {exc}", file=sys.stderr)
+            items.append({"collaborator": name, "orcid": orcid_id, "error": str(exc)})
+            continue
+        for work in works:
             work["collaborator"] = name
+            work["orcid"] = orcid_id
             items.append(work)
 
     dump_json(
