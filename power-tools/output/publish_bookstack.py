@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, load_json, load_yaml
+from common.io_utils import INGEST_DIR, STATE_DIR, dump_json
 from common.runtime import is_test_mode
 
 
@@ -110,6 +111,29 @@ def build_tasks_markdown(digest: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def promote_pending_rss_state() -> None:
+    state_path = STATE_DIR / "rss_seen_articles.json"
+    state = load_json(state_path, default={}) or {}
+    seen = set(state.get("seen_article_keys", []))
+    pending = set(state.get("pending_article_keys", []))
+    if not pending:
+        return
+    dump_json(
+        state_path,
+        {
+            "updated_at": digest_timestamp(),
+            "seen_article_keys": sorted(seen | pending),
+            "pending_article_keys": [],
+        },
+    )
+
+
+def digest_timestamp() -> str:
+    import datetime
+
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
 def main() -> None:
     digest = load_json(OUTPUT_DIR / "daily_digest.json", default={})
     if not digest:
@@ -157,6 +181,7 @@ def main() -> None:
 
     results["test_mode"] = False
     (OUTPUT_DIR / "bookstack_publish.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
+    promote_pending_rss_state()
 
 
 if __name__ == "__main__":

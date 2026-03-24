@@ -90,7 +90,6 @@ def main() -> None:
     items: list[dict] = []
     existing_state = load_json(STATE_DIR / "rss_seen_articles.json", default={}) or {}
     seen_article_keys = set(existing_state.get("seen_article_keys", []))
-    updated_article_keys = set(seen_article_keys)
     seen_links = set()
 
     failed_feeds: list[str] = []
@@ -120,7 +119,6 @@ def main() -> None:
             key = article_key(link, title, published)
             if key in seen_article_keys:
                 continue
-            updated_article_keys.add(key)
 
             items.append(
                 {
@@ -131,6 +129,7 @@ def main() -> None:
                     "summary": strip_html(entry.get("summary", entry.get("description", ""))),
                     "published": published,
                     "tags": feed.get("tags", []),
+                    "article_key": key,
                 }
             )
 
@@ -142,7 +141,8 @@ def main() -> None:
         STATE_DIR / "rss_seen_articles.json",
         {
             "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "seen_article_keys": sorted(updated_article_keys),
+            "seen_article_keys": sorted(seen_article_keys),
+            "pending_article_keys": sorted(item.get("article_key", "") for item in items if item.get("article_key")),
         },
     )
     print(f"Wrote {len(items)} journal articles to {INGEST_DIR / 'journal_articles.json'}")

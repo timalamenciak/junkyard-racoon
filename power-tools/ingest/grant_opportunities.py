@@ -68,11 +68,18 @@ def main() -> None:
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
     items: list[dict] = []
     seen_links = set()
+    failed_sources: list[str] = []
 
     for source in config.get("sources", []):
         if source.get("type", "rss") != "rss":
             continue
-        payload = fetch_bytes(source["url"])
+        source_name = source.get("name", source["url"])
+        try:
+            payload = fetch_bytes(source["url"])
+        except Exception as exc:
+            print(f"[grant_opportunities] WARNING: skipping {source_name!r}: {exc}", file=sys.stderr)
+            failed_sources.append(source_name)
+            continue
         parsed = feedparser.parse(payload)
         for entry in parsed.entries[: int(source.get("max_items", 40))]:
             link = entry.get("link", "").strip()
@@ -82,7 +89,7 @@ def main() -> None:
             items.append(
                 {
                     "source_type": "grant_rss",
-                    "source": source.get("name", source["url"]),
+                    "source": source_name,
                     "title": entry.get("title", "").strip(),
                     "link": link,
                     "summary": strip_html(entry.get("summary", entry.get("description", ""))),
@@ -96,6 +103,8 @@ def main() -> None:
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
     )
     print(f"Wrote {len(items)} grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
+    if failed_sources:
+        print(f"[grant_opportunities] {len(failed_sources)} source(s) unavailable: {', '.join(failed_sources)}", file=sys.stderr)
 
 
 if __name__ == "__main__":
