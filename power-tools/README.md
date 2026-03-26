@@ -1,131 +1,106 @@
-# Power Tools
+# power-tools
 
-This folder separates long-running and scheduled automation from the interactive Matrix bot.
+The nightly research intelligence pipeline. Orchestrated by `nightly_run.py`.
 
-## Layers
+For setup, installation, and deployment instructions see the [root README](../README.md).
 
-### 1. Ingest
+---
 
-Pulls raw records from external systems into local JSON snapshots.
+## Pipeline steps
 
-- `ingest/rss_journals.py`
-- `ingest/grant_opportunities.py`
-- `ingest/research_news.py`
-- `ingest/job_openings.py`
-- `ingest/collaborator_publications.py`
-- `ingest/gmail_imap_bridge.py`
+```
+nightly_run.py
+│
+├── ingest/collaborator_publications.py   ORCID API → collaborator_publications.json
+├── ingest/gmail_imap_bridge.py           Gmail IMAP → email_messages.json  [allow_failure]
+├── ingest/rss_journals.py                RSS + email merge → journal_articles.json
+├── ingest/grant_opportunities.py         RSS + email merge → grant_opportunities.json
+├── ingest/research_news.py               RSS + email merge + keyword filter → news_items.json
+├── ingest/job_openings.py                email + web scrapers → job_openings.json
+│
+├── processing/score_articles.py          LLM relevance score → scored_articles.json
+├── processing/score_grants.py            LLM relevance score → scored_grants.json
+├── processing/score_jobs.py              LLM student-fit score → scored_jobs.json
+├── processing/obsidian_todos.py          LLM per-note task extraction → obsidian_todos.json
+├── processing/daily_digest.py            Assembles digest + Mastodon toots → daily_digest.json/.md
+│
+├── output/publish_hedgedoc.py            Pushes to HedgeDoc wiki  [allow_failure]
+├── output/publish_static_digest.py       Builds filterable HTML site
+├── output/matrix_digest.py               Renders matrix_digest.txt
+├── output/post_matrix_digest.py          Posts digest to Matrix room  [allow_failure]
+└── output/podcast_script.py             LLM podcast script → podcast_script.md
+```
 
-### 2. Processing
+---
 
-Turns raw records into scored, summarized, and prioritized artifacts.
+## Scoring thresholds
 
-- `processing/score_articles.py`
-- `processing/score_grants.py`
-- `processing/score_jobs.py`
-- `processing/obsidian_todos.py`
-- `processing/daily_digest.py`
+Configured in `configs/lab_profile.yaml`:
 
-The Obsidian task flow now:
+| Pipeline | Key | Default |
+|----------|-----|---------|
+| Articles | `article_relevance_threshold` | 0.75 |
+| Grants | `grant_relevance_threshold` | 0.65 |
+| Jobs | all surfaced, sorted by student fit score | — |
+| News | keyword score ≥ 1 (set in `news.yaml`) | — |
 
-- reads each project file
-- converts each project file into a list of concrete tasks
-- asks the LLM to prioritize the combined task list by high impact and low effort first
+---
 
-### 3. Output
+## Tasks pipeline
 
-Publishes or formats processed artifacts for downstream systems.
+`obsidian_todos.py` runs a two-stage LLM flow:
 
-- `output/publish_hedgedoc.py`
-- `output/publish_static_digest.py`
-- `output/serve_static_digest.py`
-- `output/matrix_digest.py`
-- `output/podcast_script.py`
+1. Each project note is sent individually: *"Identify the next 3-5 tasks for this project"*
+2. All collected tasks are sent together: *"Which of these are high impact?"*
 
-The HedgeDoc publisher now keeps rolling two-month article, grant, task, and jobs notes.
-Each run prepends a new dated section to the top of the current rollup, and when the two-month window changes it publishes the old rollup to an archive note before starting a fresh one.
-The jobs note renders a live open-positions board with two tables, one for broad conservation jobs and one for academic biodiversity restoration/conservation roles.
-The static digest publisher builds a lab-facing HTML site with a rolling digest history and one continuously updated jobs table.
-For the shortest operator guide on adding new inputs, see [`docs/adding_ingest_sources.md`](/C:/Users/Tim%20Alamenciak/Documents/RacoonLab/junkyard-racoon/docs/adding_ingest_sources.md).
+Vault paths and glob patterns for project files are set in `lab_profile.yaml` under `obsidian_vault_paths` and `todo_project_globs`.
+
+---
+
+## Collaborator publications
+
+`collaborator_publications.py` queries the ORCID public API for each collaborator listed in `configs/collaborators.yaml`. Only works published within `days_back` days (default: 14) are included.
+
+---
+
+## Static digest site
+
+`publish_static_digest.py` maintains rolling state in `data/state/static_digest_site.json`:
+
+- Digest history: 60 days
+- Jobs board: 120 days, deduplicated by title + org + location + link; expired deadlines are pruned each run
+
+The generated site has a filterable, sortable jobs table and daily digest sections. Deploy path and public URL are set in `configs/output.yaml` under `static_site`.
+
+---
 
 ## Configs
 
-Configs live under `configs/`:
+| File | Purpose |
+|------|---------|
+| `llm.yaml` | LLM endpoint and credentials (shared with Matrix bot) |
+| `lab_profile.yaml` | Lab identity, research interests, scoring thresholds, Obsidian vault |
+| `output.yaml` | Static site, HedgeDoc, Matrix, podcast output paths |
+| `email_ingest.yaml` | Gmail IMAP connection and label-to-pipeline routing |
+| `journals.yaml` | Journal RSS feeds with topic tags |
+| `news.yaml` | News RSS feeds with keyword scoring |
+| `grants.yaml` | Grant RSS feeds |
+| `jobs.yaml` | Job board URLs to scrape |
+| `collaborators.yaml` | Collaborator names and ORCID IDs |
 
-- `journals.yaml`
-- `grants.yaml`
-- `collaborators.yaml`
-- `news.yaml`
-- `jobs.yaml`
-- `lab_profile.yaml`
-- `llm.yaml`
-- `output.yaml`
-- `email_ingest.yaml`
+---
 
-The email ingest config follows the same copy-from-example pattern as other local configs:
+## Test mode
 
-```yaml
-email_ingest:
-  enabled: true
-  provider: gmail_imap
-  host: imap.gmail.com
-  username_env: JUNKYARD_GMAIL_USERNAME
-  password_env: JUNKYARD_GMAIL_APP_PASSWORD
-  labels:
-    - pivot
-    - grants
-    - journals
-    - news
-    - jobs
-  lookback_days: 14
-  max_messages_per_label: 50
-  unread_only: false
+Every script honours `--test` / `POWER_TOOLS_TEST_MODE=1`. In test mode all scripts generate sample output without calling external APIs.
 
-routing:
-  email_label_map:
-    pivot: grant_opportunities
-    grants: grant_opportunities
-    journals: journal_articles
-    news: news_items
-    jobs: job_openings
+```bash
+python nightly_run.py --test
 ```
 
-## Data
+---
 
-Generated files are written under `data/`:
+## Extending the pipeline
 
-- `data/ingest`
-- `data/processing`
-- `data/output`
-
-## Typical Nightly Flow
-
-```powershell
-py -3 power-tools\nightly_run.py
-```
-
-For a non-destructive preview run that generates sample artifacts instead of calling external systems:
-
-```powershell
-py -3 power-tools\nightly_run.py --test
-```
-
-Sample scheduler definitions live in [`deploy/power-tools-nightly.cron`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/power-tools-nightly.cron), [`deploy/junkyard-racoon-nightly.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.service), and [`deploy/junkyard-racoon-nightly.timer`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.timer).
-For reverse-proxying the generated digest from another VM, use [`deploy/junkyard-racoon-digest.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-digest.service), which serves `power-tools/data/output/static_digest_site` on `127.0.0.1:8085` by default.
-
-Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_seen_articles.json` so the same article is not surfaced repeatedly on subsequent real runs.
-The Gmail IMAP bridge writes routed raw email records to `power-tools/data/ingest/email_messages.json`, and journal/grant ingesters merge those into their existing JSON snapshots.
-The `research_news.py` ingester normalizes email-routed `news_items` messages into `power-tools/data/ingest/news_items.json`.
-The `job_openings.py` ingester normalizes email-routed `job_openings` messages into `power-tools/data/ingest/job_openings.json`.
-It can also scrape configured HTML job pages such as GoodWork from `configs/jobs.yaml`.
-It also ingests RSS-based research news from `configs/news.yaml` and applies a transparent keyword filter before writing the combined snapshot.
-Email credentials are read from environment variables named in `configs/email_ingest.yaml`, for example `JUNKYARD_GMAIL_USERNAME` and `JUNKYARD_GMAIL_APP_PASSWORD`.
-Routing is label-driven: labels listed under `email_ingest.labels` are matched to downstream targets via `routing.email_label_map`.
-Gmail labels are the primary routing signal. Optional `from_contains` and `subject_contains` rules act only as backup filters within a selected labeled mailbox.
-
-## Recommended Matrix Bot Role
-
-The Matrix bot should read and relay artifacts from `power-tools/data/output/` by default.
-
-That keeps scheduling in cron or systemd, ingest and processing in `power-tools`, and chat interaction in the Matrix daemon.
-
-If you want manual intervention later, the bot can trigger selected output-only scripts, but it should not own the nightly ingest and processing pipeline.
+- **New ingest source:** `docs/adding_ingest_sources.md`
+- **New email parser:** `docs/adding_email_parsers.md`

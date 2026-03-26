@@ -25,6 +25,10 @@ try:
 except ImportError:
     yaml = None
 
+# Path to the shared power-tools LLM config
+_REPO_ROOT = Path(__file__).resolve().parent
+POWER_TOOLS_LLM_CONFIG = _REPO_ROOT / "power-tools" / "configs" / "llm.yaml"
+
 # Configuration
 HOMESERVER = os.getenv("MATRIX_HOMESERVER", "https://your-matrix-domain.com")
 USER_ID = os.getenv("MATRIX_USER_ID", "@bot:your-matrix-domain.com")
@@ -55,14 +59,6 @@ logger = logging.getLogger("matrix-bot-daemon")
 client = AsyncClient(HOMESERVER, USER_ID)
 
 DAEMON_CONFIG: dict[str, Any] = {
-    "llm": {
-        "provider": os.getenv("LLM_PROVIDER", ""),
-        "url": os.getenv("LLM_URL", ""),
-        "api_key": os.getenv("LLM_API_KEY", ""),
-        "model": os.getenv("LLM_MODEL", ""),
-        "claude_api_key": os.getenv("ANTHROPIC_API_KEY", ""),
-        "claude_model": os.getenv("CLAUDE_MODEL", ""),
-    },
     "commands": {},
 }
 
@@ -95,22 +91,34 @@ def load_daemon_config() -> None:
     logger.info("Loaded daemon config from %s", CONFIG_FILE)
 
 
+def load_power_tools_llm_config() -> dict[str, Any]:
+    """Load the shared LLM config from power-tools/configs/llm.yaml."""
+    if not POWER_TOOLS_LLM_CONFIG.exists():
+        logger.warning("power-tools LLM config not found at %s", POWER_TOOLS_LLM_CONFIG)
+        return {}
+    if yaml is None:
+        logger.warning("PyYAML not installed; cannot load LLM config")
+        return {}
+    with POWER_TOOLS_LLM_CONFIG.open("r", encoding="utf-8") as fh:
+        return yaml.safe_load(fh) or {}
+
+
 def build_command_env(command: str) -> dict[str, str]:
     env = os.environ.copy()
-    llm_cfg = DAEMON_CONFIG.get("llm", {})
+
+    # Populate LLM env vars from the shared power-tools config so tool scripts
+    # can call the same endpoint without duplicating credentials.
+    llm_cfg = load_power_tools_llm_config()
     if llm_cfg.get("provider"):
         env["LLM_PROVIDER"] = str(llm_cfg["provider"])
-    if llm_cfg.get("url"):
-        env["LLM_URL"] = str(llm_cfg["url"])
+    if llm_cfg.get("endpoint"):
+        env["LLM_URL"] = str(llm_cfg["endpoint"])
     if llm_cfg.get("api_key"):
         env["LLM_API_KEY"] = str(llm_cfg["api_key"])
     if llm_cfg.get("model"):
         env["LLM_MODEL"] = str(llm_cfg["model"])
-    if llm_cfg.get("claude_api_key"):
-        env["ANTHROPIC_API_KEY"] = str(llm_cfg["claude_api_key"])
-    if llm_cfg.get("claude_model"):
-        env["CLAUDE_MODEL"] = str(llm_cfg["claude_model"])
 
+    # Per-command env overrides from daemon config still apply
     command_cfg = DAEMON_CONFIG.get("commands", {}).get(command, {})
     for env_key, cfg_value in command_cfg.get("env", {}).items():
         env[str(env_key)] = str(cfg_value)
@@ -119,15 +127,10 @@ def build_command_env(command: str) -> dict[str, str]:
 
 
 def build_status_message() -> str:
-    llm_cfg = DAEMON_CONFIG.get("llm", {})
-    provider = llm_cfg.get("provider") or os.getenv("LLM_PROVIDER") or "unset"
-    model = (
-        llm_cfg.get("model")
-        or llm_cfg.get("claude_model")
-        or os.getenv("LLM_MODEL")
-        or os.getenv("CLAUDE_MODEL")
-        or "unset"
-    )
+    llm_cfg = load_power_tools_llm_config()
+    provider = llm_cfg.get("provider") or "unset"
+    model = llm_cfg.get("model") or "unset"
+    llm_source = str(POWER_TOOLS_LLM_CONFIG) if POWER_TOOLS_LLM_CONFIG.exists() else "not found"
     config_source = str(CONFIG_FILE) if CONFIG_FILE.exists() else "env/defaults only"
     commands = ", ".join(get_available_commands()) or "none"
     digest_status = "present" if DIGEST_FILE.exists() else "not found"
@@ -135,6 +138,7 @@ def build_status_message() -> str:
     return (
         "Matrix bot status\n"
         f"Config: {config_source}\n"
+        f"LLM config: {llm_source}\n"
         f"LLM provider: {provider}\n"
         f"LLM model: {model}\n"
         f"Commands: {commands}\n"

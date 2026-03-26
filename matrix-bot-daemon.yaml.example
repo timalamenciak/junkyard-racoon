@@ -1,20 +1,13 @@
 # Copy this file to matrix-bot-daemon.yaml and edit as needed.
-
-llm:
-  provider: openai_compatible
-  url: http://172.16.5.8:8080/v1/chat/completions
-  api_key: replace-me
-  model: qwen3-14b
-
-  # Claude example:
-  # provider: claude
-  # claude_api_key: replace-me
-  # claude_model: claude-opus-4-6
+#
+# LLM settings are loaded automatically from power-tools/configs/llm.yaml —
+# no duplication needed here.
+#
+# Use the commands section to enable/disable plug-in tool scripts and pass
+# any extra environment variables they need (e.g. API tokens for external services).
 
 commands:
-  rss_digest:
-    enabled: true
-    env:
-      BOOKSTACK_URL: https://wiki.lab.tim-a.ca
-      BOOKSTACK_TOKEN_ID: replace-me
-      BOOKSTACK_TOKEN_SECRET: replace-me
+  # example_tool:
+  #   enabled: true
+  #   env:
+  #     SOME_API_TOKEN: replace-me
