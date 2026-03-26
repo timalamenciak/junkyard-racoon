@@ -10,7 +10,9 @@ Pulls raw records from external systems into local JSON snapshots.
 
 - `ingest/rss_journals.py`
 - `ingest/grant_opportunities.py`
+- `ingest/research_news.py`
 - `ingest/collaborator_publications.py`
+- `ingest/gmail_imap_bridge.py`
 
 ### 2. Processing
 
@@ -45,9 +47,37 @@ Configs live under `configs/`:
 - `journals.yaml`
 - `grants.yaml`
 - `collaborators.yaml`
+- `news.yaml`
 - `lab_profile.yaml`
 - `llm.yaml`
 - `output.yaml`
+- `email_ingest.yaml`
+
+The email ingest config follows the same copy-from-example pattern as other local configs:
+
+```yaml
+email_ingest:
+  enabled: true
+  provider: gmail_imap
+  host: imap.gmail.com
+  username_env: JUNKYARD_GMAIL_USERNAME
+  password_env: JUNKYARD_GMAIL_APP_PASSWORD
+  labels:
+    - pivot
+    - grants
+    - journals
+    - news
+  lookback_days: 14
+  max_messages_per_label: 50
+  unread_only: false
+
+routing:
+  email_label_map:
+    pivot: grant_opportunities
+    grants: grant_opportunities
+    journals: journal_articles
+    news: news_items
+```
 
 ## Data
 
@@ -72,6 +102,12 @@ py -3 power-tools\nightly_run.py --test
 Sample scheduler definitions live in [`deploy/power-tools-nightly.cron`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/power-tools-nightly.cron), [`deploy/junkyard-racoon-nightly.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.service), and [`deploy/junkyard-racoon-nightly.timer`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.timer).
 
 Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_seen_articles.json` so the same article is not surfaced repeatedly on subsequent real runs.
+The Gmail IMAP bridge writes routed raw email records to `power-tools/data/ingest/email_messages.json`, and journal/grant ingesters merge those into their existing JSON snapshots.
+The `research_news.py` ingester normalizes email-routed `news_items` messages into `power-tools/data/ingest/news_items.json`.
+It also ingests RSS-based research news from `configs/news.yaml` and applies a transparent keyword filter before writing the combined snapshot.
+Email credentials are read from environment variables named in `configs/email_ingest.yaml`, for example `JUNKYARD_GMAIL_USERNAME` and `JUNKYARD_GMAIL_APP_PASSWORD`.
+Routing is label-driven: labels listed under `email_ingest.labels` are matched to downstream targets via `routing.email_label_map`.
+Gmail labels are the primary routing signal. Optional `from_contains` and `subject_contains` rules act only as backup filters within a selected labeled mailbox.
 
 ## Recommended Matrix Bot Role
 

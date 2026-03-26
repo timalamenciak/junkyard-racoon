@@ -18,6 +18,7 @@ power-tools/**/*.log
 # Secret-bearing configs — copy from *.example and fill in real values
 power-tools/configs/llm.yaml
 power-tools/configs/output.yaml
+power-tools/configs/email_ingest.yaml
 
 .DS_Store
 Thumbs.db

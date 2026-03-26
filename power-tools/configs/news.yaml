@@ -1,0 +1,32 @@
+lookback_days: 7
+max_items_per_feed: 40
+minimum_keyword_score: 1
+
+keywords:
+  - ecology
+  - restoration
+  - conservation
+  - biodiversity
+  - environmental assessment
+  - evidence synthesis
+  - ai for ecology
+  - knowledge graph
+  - knowledge graphs
+  - ontology
+  - ontologies
+  - canadian environmental policy
+  - canada
+  - impact assessment
+
+feeds:
+  - name: Mongabay Conservation News
+    url: https://news.mongabay.com/feed/
+    tags: [news, conservation]
+
+  - name: The Narwhal Environment
+    url: https://thenarwhal.ca/category/environment/feed/
+    tags: [news, canada, policy]
+
+  - name: Nature News
+    url: https://www.nature.com/nature.rss
+    tags: [news, science]

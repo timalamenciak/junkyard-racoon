@@ -14,7 +14,10 @@ import feedparser
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.http_utils import fetch_bytes
-from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_yaml
+from common.email_source_registry import route_matches_target
+from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
+from common.email_utils import collapse_ws
+from common.pivot_email_parser import parse_pivot_email_opportunities
 from common.runtime import is_test_mode
 
 
@@ -50,10 +53,79 @@ def sample_items() -> list[dict]:
     ]
 
 
+def _normalize_email_grant_item(message: dict, parsed: dict) -> dict:
+    return {
+        "source_type": "grant_email",
+        "source": message.get("route_name", message.get("mailbox", "Email")),
+        "title": parsed.get("title", "").strip(),
+        "link": (parsed.get("link") or "").strip(),
+        "summary": (parsed.get("summary") or message.get("summary") or message.get("body_text") or "")[:1200],
+        "published": message.get("published", "unknown"),
+        "tags": list(message.get("tags", [])),
+        "gmail_label": message.get("gmail_label", ""),
+        "message_id": message.get("message_id", ""),
+        "email_from": message.get("from", ""),
+        "deadline": parsed.get("deadline", ""),
+        "sponsor": parsed.get("sponsor", ""),
+        "alert_context": parsed.get("alert_context", ""),
+        "parsing_confidence": parsed.get("parsing_confidence", 0.0),
+        "raw_email_subject": message.get("subject", ""),
+    }
+
+
+def parse_email_grant_items(message: dict) -> list[dict]:
+    label = (message.get("gmail_label") or message.get("route_name") or "").strip().lower()
+    if label in {"pivot", "grants"}:
+        parsed_items = parse_pivot_email_opportunities(message)
+        if parsed_items:
+            return [_normalize_email_grant_item(message, parsed) for parsed in parsed_items]
+    title = (message.get("subject") or "").strip()
+    if not title:
+        return []
+    return [
+        _normalize_email_grant_item(
+            message,
+            {
+                "title": title,
+                "link": (message.get("link") or "").strip(),
+                "summary": (message.get("summary") or message.get("body_text") or "")[:1200],
+                "deadline": "",
+                "sponsor": "",
+                "alert_context": collapse_ws(message.get("subject", "")) if message.get("subject") else "",
+                "parsing_confidence": 0.35,
+            },
+        )
+    ]
+
+
+def load_email_grant_items() -> list[dict]:
+    payload = load_json(INGEST_DIR / "email_messages.json", default={"items": []}) or {}
+    items: list[dict] = []
+    seen_keys: set[str] = set()
+    for message in payload.get("items", []):
+        if not isinstance(message, dict) or not route_matches_target(message, "grant_opportunities"):
+            continue
+        for item in parse_email_grant_items(message):
+            dedupe_key = "||".join(
+                [
+                    message.get("message_id", "").strip(),
+                    item.get("link", "").strip(),
+                    item.get("title", "").strip().lower(),
+                ]
+            )
+            if dedupe_key in seen_keys:
+                continue
+            seen_keys.add(dedupe_key)
+            items.append(item)
+    return items
+
+
 def main() -> None:
     ensure_data_dirs()
     if is_test_mode():
-        items = sample_items()
+        rss_items = sample_items()
+        email_items = load_email_grant_items()
+        items = rss_items + email_items
         dump_json(
             INGEST_DIR / "grant_opportunities.json",
             {
@@ -63,6 +135,7 @@ def main() -> None:
             },
         )
         print(f"Wrote {len(items)} sample grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
+        print(f"[grant_opportunities] counts: rss={len(rss_items)}, email={len(email_items)}, merged={len(items)}")
         return
 
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
@@ -98,11 +171,15 @@ def main() -> None:
                 }
             )
 
+    rss_count = len(items)
+    email_items = load_email_grant_items()
+    items.extend(email_items)
     dump_json(
         INGEST_DIR / "grant_opportunities.json",
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
     )
     print(f"Wrote {len(items)} grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
+    print(f"[grant_opportunities] counts: rss={rss_count}, email={len(email_items)}, merged={len(items)}")
     if failed_sources:
         print(f"[grant_opportunities] {len(failed_sources)} source(s) unavailable: {', '.join(failed_sources)}", file=sys.stderr)
 

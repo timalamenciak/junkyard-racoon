@@ -14,7 +14,10 @@ import feedparser
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.http_utils import fetch_bytes
+from common.email_source_registry import route_matches_target
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, STATE_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
+from common.journal_email_parser import parse_journal_email_articles
+from common.record_utils import canonicalize_url, fingerprint_record, merge_records
 from common.runtime import is_test_mode
 
 
@@ -46,6 +49,83 @@ def article_key(link: str, title: str, published: str) -> str:
     return "||".join((link.strip(), title.strip().lower(), published.strip()))
 
 
+def merge_journal_items(items: list[dict]) -> list[dict]:
+    merged_by_fingerprint: dict[str, dict] = {}
+    order: list[str] = []
+    for item in items:
+        canonical_link = canonicalize_url(item.get("link", ""))
+        if canonical_link:
+            item["link"] = canonical_link
+        item.setdefault("provenance", [])
+        item.setdefault("sources", [])
+        if item.get("source_type") == "journal_rss":
+            item["provenance"] = ["rss"]
+            item["sources"] = [item.get("feed", "")]
+        elif item.get("source_type") == "journal_email":
+            item["provenance"] = ["email"]
+            item["sources"] = [item.get("gmail_label", "") or item.get("feed", "")]
+
+        fingerprint = fingerprint_record(item.get("title", ""), item.get("link", ""), item.get("published", ""))
+        if not fingerprint.strip("|"):
+            fingerprint = item.get("article_key", "")
+        if fingerprint not in merged_by_fingerprint:
+            merged_by_fingerprint[fingerprint] = item
+            order.append(fingerprint)
+            continue
+        merged_by_fingerprint[fingerprint] = merge_records(
+            merged_by_fingerprint[fingerprint],
+            item,
+            preserve_keys=("article_key",),
+        )
+    return [merged_by_fingerprint[key] for key in order]
+
+
+def load_email_article_items(seen_article_keys: set[str], seen_links: set[str] | None = None) -> list[dict]:
+    payload = load_json(INGEST_DIR / "email_messages.json", default={"items": []}) or {}
+    items: list[dict] = []
+    email_seen_fingerprints: set[str] = set()
+    for message in payload.get("items", []):
+        if not isinstance(message, dict):
+            continue
+        if not route_matches_target(message, "journal_articles"):
+            continue
+        parsed_items = parse_journal_email_articles(message)
+        for parsed in parsed_items:
+            title = (parsed.get("title") or "").strip()
+            if not title:
+                continue
+            published = message.get("published", "unknown")
+            link = (parsed.get("link") or "").strip()
+            key = article_key(link or f"message:{message.get('message_id', '')}", title, published)
+            if key in seen_article_keys:
+                continue
+            fingerprint = fingerprint_record(title, link, published)
+            if fingerprint in email_seen_fingerprints:
+                continue
+            email_seen_fingerprints.add(fingerprint)
+            items.append(
+                {
+                    "source_type": "journal_email",
+                    "feed": parsed.get("journal_name") or message.get("route_name", message.get("mailbox", "Email")),
+                    "title": title,
+                    "link": link,
+                    "summary": (parsed.get("summary") or message.get("summary") or message.get("body_text") or "")[:1200],
+                    "published": published,
+                    "tags": list(message.get("tags", [])),
+                    "article_key": key,
+                    "gmail_label": message.get("gmail_label", ""),
+                    "message_id": message.get("message_id", ""),
+                    "email_from": message.get("from", ""),
+                    "authors": parsed.get("authors", ""),
+                    "doi": parsed.get("doi", ""),
+                    "published_hint": parsed.get("published_hint", ""),
+                    "parsing_confidence": parsed.get("parsing_confidence", 0.0),
+                    "canonical_link": canonicalize_url(link),
+                }
+            )
+    return items
+
+
 def sample_items() -> list[dict]:
     return [
         {
@@ -71,8 +151,12 @@ def sample_items() -> list[dict]:
 
 def main() -> None:
     ensure_data_dirs()
+    existing_state = load_json(STATE_DIR / "rss_seen_articles.json", default={}) or {}
+    seen_article_keys = set(existing_state.get("seen_article_keys", []))
     if is_test_mode():
-        items = sample_items()
+        rss_items = sample_items()
+        email_items = load_email_article_items(seen_article_keys)
+        items = merge_journal_items(rss_items + email_items)
         dump_json(
             INGEST_DIR / "journal_articles.json",
             {
@@ -82,14 +166,13 @@ def main() -> None:
             },
         )
         print(f"Wrote {len(items)} sample journal articles to {INGEST_DIR / 'journal_articles.json'}")
+        print(f"[rss_journals] counts: rss={len(rss_items)}, email={len(email_items)}, merged={len(items)}")
         return
 
     config = load_yaml(CONFIGS_DIR / "journals.yaml")
     lookback_hours = int(config.get("lookback_hours", 48))
     cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=lookback_hours)
     items: list[dict] = []
-    existing_state = load_json(STATE_DIR / "rss_seen_articles.json", default={}) or {}
-    seen_article_keys = set(existing_state.get("seen_article_keys", []))
     seen_links = set()
 
     failed_feeds: list[str] = []
@@ -130,9 +213,14 @@ def main() -> None:
                     "published": published,
                     "tags": feed.get("tags", []),
                     "article_key": key,
+                    "canonical_link": canonicalize_url(link),
                 }
             )
 
+    rss_count = len(items)
+    email_items = load_email_article_items(seen_article_keys, seen_links)
+    items.extend(email_items)
+    items = merge_journal_items(items)
     dump_json(
         INGEST_DIR / "journal_articles.json",
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
@@ -146,6 +234,7 @@ def main() -> None:
         },
     )
     print(f"Wrote {len(items)} journal articles to {INGEST_DIR / 'journal_articles.json'}")
+    print(f"[rss_journals] counts: rss={rss_count}, email={len(email_items)}, merged={len(items)}")
     if failed_feeds:
         print(f"[rss_journals] {len(failed_feeds)} feed(s) unavailable: {', '.join(failed_feeds)}", file=sys.stderr)
 

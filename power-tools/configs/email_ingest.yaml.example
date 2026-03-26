@@ -1,0 +1,24 @@
+# Copy this file to email_ingest.yaml and fill in real values.
+# email_ingest.yaml is gitignored - never commit the real file.
+email_ingest:
+  enabled: true
+  provider: gmail_imap
+  host: imap.gmail.com
+  port: 993
+  username_env: JUNKYARD_GMAIL_USERNAME
+  password_env: JUNKYARD_GMAIL_APP_PASSWORD
+  labels:
+    - pivot
+    - grants
+    - journals
+    - news
+  lookback_days: 14
+  max_messages_per_label: 50
+  unread_only: false
+
+routing:
+  email_label_map:
+    pivot: grant_opportunities
+    grants: grant_opportunities
+    journals: journal_articles
+    news: news_items
