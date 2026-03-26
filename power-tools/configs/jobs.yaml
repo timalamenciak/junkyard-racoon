@@ -1,0 +1,6 @@
+sources:
+  - name: GoodWork Environmental Jobs
+    type: web_html
+    scraper: goodwork
+    url: https://www.goodwork.ca/jobs
+    max_items: 25

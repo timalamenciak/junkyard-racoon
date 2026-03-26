@@ -116,7 +116,7 @@ def _normalize_date_hint(value: str) -> str:
     return collapse_ws(value.replace(" ,", ","))
 
 
-def _guess_category(title: str, text: str, organization: str) -> str:
+def classify_job_category(title: str, text: str, organization: str) -> str:
     haystack = f"{title} {text} {organization}".lower()
     has_academic_role = any(keyword in haystack for keyword in ACADEMIC_ROLE_KEYWORDS)
     has_academic_context = any(keyword in haystack for keyword in ACADEMIC_CONTEXT_KEYWORDS)
@@ -186,7 +186,7 @@ def parse_job_email_items(message: dict[str, Any]) -> list[dict[str, Any]]:
         pay = _extract_line_value(lines, ("salary", "stipend", "rate of pay", "compensation", "pay")) or _first_match(PAY_RE, candidate_text)
         posted_date = _extract_line_value(lines, ("posted", "posting date", "posted date", "date posted")) or _first_match(POSTED_RE, candidate_text)
         deadline = _extract_line_value(lines, ("deadline", "apply by", "application deadline", "closing date", "review begins")) or _first_match(DEADLINE_RE, candidate_text)
-        category = _guess_category(title, candidate_text, organization)
+        category = classify_job_category(title, candidate_text, organization)
         if not category:
             continue
         summary = candidate_text.replace(title, " ")

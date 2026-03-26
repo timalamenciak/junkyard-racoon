@@ -54,6 +54,7 @@ Configs live under `configs/`:
 - `grants.yaml`
 - `collaborators.yaml`
 - `news.yaml`
+- `jobs.yaml`
 - `lab_profile.yaml`
 - `llm.yaml`
 - `output.yaml`
@@ -114,6 +115,7 @@ Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_
 The Gmail IMAP bridge writes routed raw email records to `power-tools/data/ingest/email_messages.json`, and journal/grant ingesters merge those into their existing JSON snapshots.
 The `research_news.py` ingester normalizes email-routed `news_items` messages into `power-tools/data/ingest/news_items.json`.
 The `job_openings.py` ingester normalizes email-routed `job_openings` messages into `power-tools/data/ingest/job_openings.json`.
+It can also scrape configured HTML job pages such as GoodWork from `configs/jobs.yaml`.
 It also ingests RSS-based research news from `configs/news.yaml` and applies a transparent keyword filter before writing the combined snapshot.
 Email credentials are read from environment variables named in `configs/email_ingest.yaml`, for example `JUNKYARD_GMAIL_USERNAME` and `JUNKYARD_GMAIL_APP_PASSWORD`.
 Routing is label-driven: labels listed under `email_ingest.labels` are matched to downstream targets via `routing.email_label_map`.

@@ -10,8 +10,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.email_source_registry import route_matches_target
-from common.io_utils import INGEST_DIR, dump_json, ensure_data_dirs, load_json
+from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
 from common.job_email_parser import parse_job_email_items
+from common.job_web_scraper import scrape_goodwork_jobs
 from common.record_utils import canonicalize_url
 from common.runtime import is_test_mode
 
@@ -104,6 +105,37 @@ def load_email_job_items() -> list[dict]:
     return items
 
 
+def load_web_job_items() -> list[dict]:
+    config_path = CONFIGS_DIR / "jobs.yaml"
+    if not config_path.exists():
+        return []
+    config = load_yaml(config_path)
+    items: list[dict] = []
+    seen_keys: set[str] = set()
+    for source in config.get("sources", []):
+        if source.get("type") != "web_html":
+            continue
+        scraper = str(source.get("scraper", "")).strip().lower()
+        if scraper != "goodwork":
+            continue
+        scraped = scrape_goodwork_jobs(source["url"], max_items=int(source.get("max_items", 25)))
+        for item in scraped:
+            item["tags"] = list(source.get("tags", ["jobs", "web"]))
+            dedupe_key = "||".join(
+                [
+                    item.get("title", "").strip().lower(),
+                    item.get("organization", "").strip().lower(),
+                    item.get("location", "").strip().lower(),
+                    item.get("link", "").strip(),
+                ]
+            )
+            if dedupe_key in seen_keys:
+                continue
+            seen_keys.add(dedupe_key)
+            items.append(item)
+    return items
+
+
 def main() -> None:
     ensure_data_dirs()
     if is_test_mode():
@@ -119,7 +151,9 @@ def main() -> None:
         print(f"Wrote {len(items)} sample job openings to {INGEST_DIR / 'job_openings.json'}")
         return
 
-    items = load_email_job_items()
+    email_items = load_email_job_items()
+    web_items = load_web_job_items()
+    items = email_items + web_items
     dump_json(
         INGEST_DIR / "job_openings.json",
         {
@@ -128,6 +162,7 @@ def main() -> None:
         },
     )
     print(f"Wrote {len(items)} job openings to {INGEST_DIR / 'job_openings.json'}")
+    print(f"[job_openings] counts: email={len(email_items)}, web={len(web_items)}, merged={len(items)}")
 
 
 if __name__ == "__main__":
