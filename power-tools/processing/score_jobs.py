@@ -14,7 +14,7 @@ from common.llm import chat_completion, extract_json_payload
 from common.runtime import is_test_mode
 
 
-BATCH_SIZE = 8
+BATCH_SIZE = 3
 DEFAULT_THRESHOLD = 0.45
 
 
@@ -30,7 +30,7 @@ def build_prompt(jobs: list[dict], lab_profile: dict) -> list[dict[str, str]]:
             f"Posted: {job.get('posted_date', '')}\n"
             f"Deadline: {job.get('application_deadline', '')}\n"
             f"Category: {job.get('category', '')}\n"
-            f"Summary: {job.get('summary', '')[:700]}\n"
+            f"Summary: {job.get('summary', '')[:220]}\n"
             f"Link: {job.get('link', '')}"
         )
     system = (
