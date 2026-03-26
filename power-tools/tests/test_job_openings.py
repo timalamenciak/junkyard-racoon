@@ -148,3 +148,48 @@ def test_publish_hedgedoc_tracks_jobs_records_in_test_mode(monkeypatch, tmp_path
 
     publish = json.loads((output_dir / "hedgedoc_publish.json").read_text(encoding="utf-8"))
     assert publish["jobs_url"] == "https://hedgedoc.example.org/jobs-note-rolling-2026-03-26"
+
+
+def test_publish_note_falls_back_to_random_note(monkeypatch) -> None:
+    monkeypatch.setattr(
+        publish_hedgedoc,
+        "_publish_note_to_alias",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(publish_hedgedoc.HedgeDocPublishError("alias failed")),
+    )
+    monkeypatch.setattr(
+        publish_hedgedoc,
+        "_publish_note_random",
+        lambda *_args, **_kwargs: "https://hedgedoc.example.org/random-note",
+    )
+
+    url, mode = publish_hedgedoc.publish_note(
+        "https://hedgedoc.example.org",
+        "articles-note",
+        "# test",
+        {"Cookie": "hedgedoc.sid=abc", "Content-Type": "text/markdown; charset=utf-8"},
+        allow_random_fallback=True,
+    )
+
+    assert url == "https://hedgedoc.example.org/random-note"
+    assert mode.startswith("random_fallback:")
+
+
+def test_ensure_session_authenticated_requires_logged_in_user(monkeypatch) -> None:
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"name":"Tim"}'
+
+    monkeypatch.setattr(publish_hedgedoc, "_request", lambda *_args, **_kwargs: FakeResponse())
+
+    payload = publish_hedgedoc.ensure_session_authenticated(
+        "https://hedgedoc.example.org",
+        {"Cookie": "hedgedoc.sid=abc", "Content-Type": "application/json"},
+    )
+
+    assert payload["name"] == "Tim"

@@ -2,9 +2,11 @@
 # output.yaml is gitignored - never commit the real file.
 hedgedoc:
   url: https://your-hedgedoc-instance
-  api_token: your-api-token-here
-  # Optional instead of api_token when your instance relies on browser auth.
+  # HedgeDoc 1.x automation relies on a logged-in browser session cookie.
   session_cookie: hedgedoc.sid=replace-me
+  # Optional: if alias creation fails but the session is valid, create a random
+  # note instead of stopping the pipeline.
+  fallback_to_random_new: true
   notes:
     articles: lab-journal-articles
     grants: lab-grant-opportunities

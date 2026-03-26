@@ -10,6 +10,7 @@ import sys
 import urllib.parse
 import urllib.error
 import urllib.request
+from http.client import HTTPResponse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -21,48 +22,101 @@ from common.runtime import is_test_mode
 ROLLUP_STATE_PATH = STATE_DIR / "hedgedoc_rollups.json"
 
 
+class HedgeDocPublishError(RuntimeError):
+    pass
+
+
 def auth_headers(config: dict, content_type: str) -> dict[str, str]:
-    headers = {"Content-Type": content_type}
-    token = config.get("api_token", "")
+    headers = {"Content-Type": content_type, "User-Agent": "junkyard-racoon/hedgedoc-publisher"}
     cookie = config.get("session_cookie", "")
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     if cookie:
         headers["Cookie"] = cookie
     return headers
 
 
-def publish_note(base_url: str, alias: str, markdown: str, hdrs: dict[str, str]) -> str:
-    request = urllib.request.Request(
-        f"{base_url}/new/{urllib.parse.quote(alias)}",
-        data=markdown.encode("utf-8"),
-        headers=hdrs,
-        method="POST",
-    )
+def _request(
+    url: str,
+    headers: dict[str, str],
+    *,
+    method: str = "GET",
+    data: bytes | None = None,
+    timeout: int = 30,
+) -> HTTPResponse:
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            final_url = response.geturl()
-            parsed_base = urllib.parse.urlparse(base_url.rstrip("/"))
-            parsed_final = urllib.parse.urlparse(final_url.rstrip("/"))
-            suspicious_paths = {"", "/", "/login", "/signin", "/auth/login"}
-            if (
-                parsed_final.netloc == parsed_base.netloc
-                and parsed_final.path in suspicious_paths
-            ):
-                raise RuntimeError(
-                    f"HedgeDoc publish for alias {alias!r} resolved to {final_url!r} instead of a note URL. "
-                    "This usually means the request was redirected because auth failed or the endpoint is not accepted by this HedgeDoc instance."
-                )
-            return final_url
+        return urllib.request.urlopen(request, timeout=timeout)
     except urllib.error.HTTPError as exc:
         body = ""
         try:
             body = exc.read().decode("utf-8", errors="replace")[:400]
         except Exception:
             body = ""
-        raise RuntimeError(
-            f"HedgeDoc publish failed for alias {alias!r} with HTTP {exc.code}. {body}".strip()
+        raise HedgeDocPublishError(f"HTTP {exc.code} for {url!r}. {body}".strip()) from exc
+
+
+def ensure_session_authenticated(base_url: str, session_headers: dict[str, str]) -> dict:
+    if "Cookie" not in session_headers:
+        raise HedgeDocPublishError("hedgedoc.session_cookie not set in output.yaml")
+    try:
+        with _request(f"{base_url}/me", session_headers) as response:
+            payload = json.loads(response.read().decode("utf-8", errors="replace") or "{}")
+    except HedgeDocPublishError as exc:
+        raise HedgeDocPublishError(
+            f"HedgeDoc session validation failed via /me. {exc}"
         ) from exc
+    if not isinstance(payload, dict) or not payload.get("name"):
+        raise HedgeDocPublishError(
+            "HedgeDoc session cookie was accepted by the server but /me did not return a logged-in user."
+        )
+    return payload
+
+
+def _looks_like_failed_redirect(base_url: str, final_url: str) -> bool:
+    parsed_base = urllib.parse.urlparse(base_url.rstrip("/"))
+    parsed_final = urllib.parse.urlparse(final_url.rstrip("/"))
+    suspicious_paths = {"", "/", "/login", "/signin", "/auth/login"}
+    return parsed_final.netloc == parsed_base.netloc and parsed_final.path in suspicious_paths
+
+
+def _publish_note_to_alias(base_url: str, alias: str, markdown: str, hdrs: dict[str, str]) -> str:
+    with _request(
+        f"{base_url}/new/{urllib.parse.quote(alias)}",
+        hdrs,
+        method="POST",
+        data=markdown.encode("utf-8"),
+    ) as response:
+        final_url = response.geturl()
+    if _looks_like_failed_redirect(base_url, final_url):
+        raise HedgeDocPublishError(
+            f"HedgeDoc publish for alias {alias!r} resolved to {final_url!r} instead of a note URL. "
+            "This usually means the request was redirected because auth failed or the alias creation endpoint was rejected."
+        )
+    return final_url
+
+
+def _publish_note_random(base_url: str, markdown: str, hdrs: dict[str, str]) -> str:
+    with _request(
+        f"{base_url}/new",
+        hdrs,
+        method="POST",
+        data=markdown.encode("utf-8"),
+    ) as response:
+        final_url = response.geturl()
+    if _looks_like_failed_redirect(base_url, final_url):
+        raise HedgeDocPublishError(
+            f"HedgeDoc random-note publish resolved to {final_url!r} instead of a note URL."
+        )
+    return final_url
+
+
+def publish_note(base_url: str, alias: str, markdown: str, hdrs: dict[str, str], allow_random_fallback: bool) -> tuple[str, str]:
+    try:
+        return _publish_note_to_alias(base_url, alias, markdown, hdrs), "alias"
+    except HedgeDocPublishError as exc:
+        if not allow_random_fallback:
+            raise
+        fallback_url = _publish_note_random(base_url, markdown, hdrs)
+        return fallback_url, f"random_fallback:{exc}"
 
 
 def bimonthly_period(target_date: datetime.date) -> dict[str, str]:
@@ -366,6 +420,7 @@ def main() -> None:
     output_cfg = load_yaml(CONFIGS_DIR / "output.yaml")
     hedgedoc = output_cfg.get("hedgedoc", {})
     aliases = hedgedoc.get("notes", {})
+    allow_random_fallback = bool(hedgedoc.get("fallback_to_random_new", True))
 
     base_url = hedgedoc.get("url", "").rstrip("/")
     if not base_url:
@@ -475,18 +530,22 @@ def main() -> None:
         return
 
     hdrs = auth_headers(hedgedoc, "text/markdown; charset=utf-8")
+    session_info = ensure_session_authenticated(base_url, auth_headers(hedgedoc, "application/json"))
+    results["authenticated_user"] = session_info.get("name", "")
     try:
         for label, alias, markdown in archive_payloads:
-            archive_url = publish_note(base_url, alias, markdown, hdrs)
+            archive_url, publish_mode = publish_note(base_url, alias, markdown, hdrs, allow_random_fallback)
             results[f"{label}_archive_url"] = archive_url
+            results[f"{label}_archive_mode"] = publish_mode
             print(f"{label} archive: {archive_url}")
 
         for label, alias, markdown in snapshot_payloads:
-            url = publish_note(base_url, alias, markdown, hdrs)
+            url, publish_mode = publish_note(base_url, alias, markdown, hdrs, allow_random_fallback)
             section_state = ensure_section_state(state, label)
             section_state["latest_snapshot_url"] = url
             results[f"{label}_url"] = url
             results[f"{label}_alias"] = alias
+            results[f"{label}_mode"] = publish_mode
             print(f"{label}: {url}")
     except Exception as exc:
         results["test_mode"] = False
