@@ -1,0 +1,18 @@
+[Unit]
+Description=Junkyard Racoon static digest HTTP service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/junkyard-racoon
+ExecStart=/usr/bin/python3 /opt/junkyard-racoon/power-tools/output/serve_static_digest.py --bind 127.0.0.1 --port 8085 --directory /opt/junkyard-racoon/power-tools/data/output/static_digest_site
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/junkyard-racoon-digest.log
+StandardError=append:/var/log/junkyard-racoon-digest.log
+
+[Install]
+WantedBy=multi-user.target

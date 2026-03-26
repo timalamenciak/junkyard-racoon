@@ -36,6 +36,7 @@ Publishes or formats processed artifacts for downstream systems.
 
 - `output/publish_hedgedoc.py`
 - `output/publish_static_digest.py`
+- `output/serve_static_digest.py`
 - `output/matrix_digest.py`
 - `output/podcast_script.py`
 
@@ -106,6 +107,7 @@ py -3 power-tools\nightly_run.py --test
 ```
 
 Sample scheduler definitions live in [`deploy/power-tools-nightly.cron`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/power-tools-nightly.cron), [`deploy/junkyard-racoon-nightly.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.service), and [`deploy/junkyard-racoon-nightly.timer`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-nightly.timer).
+For reverse-proxying the generated digest from another VM, use [`deploy/junkyard-racoon-digest.service`](/C:/Users/Tim Alamenciak/Documents/RacoonLab/junkyard-racoon/deploy/junkyard-racoon-digest.service), which serves `power-tools/data/output/static_digest_site` on `127.0.0.1:8085` by default.
 
 Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_seen_articles.json` so the same article is not surfaced repeatedly on subsequent real runs.
 The Gmail IMAP bridge writes routed raw email records to `power-tools/data/ingest/email_messages.json`, and journal/grant ingesters merge those into their existing JSON snapshots.
