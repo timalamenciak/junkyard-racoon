@@ -44,6 +44,7 @@ The HedgeDoc publisher now keeps rolling two-month article, grant, task, and job
 Each run prepends a new dated section to the top of the current rollup, and when the two-month window changes it publishes the old rollup to an archive note before starting a fresh one.
 The jobs note renders a live open-positions board with two tables, one for broad conservation jobs and one for academic biodiversity restoration/conservation roles.
 The static digest publisher builds a lab-facing HTML site with a rolling digest history and one continuously updated jobs table.
+For the shortest operator guide on adding new inputs, see [`docs/adding_ingest_sources.md`](/C:/Users/Tim%20Alamenciak/Documents/RacoonLab/junkyard-racoon/docs/adding_ingest_sources.md).
 
 ## Configs
 

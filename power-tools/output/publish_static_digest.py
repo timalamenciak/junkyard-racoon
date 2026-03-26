@@ -168,19 +168,62 @@ def render_jobs_table(items: list[dict]) -> str:
     return "".join(rows)
 
 
+def render_raccoon_badge() -> str:
+    return """
+<svg class='raccoon-badge' viewBox='0 0 220 180' role='img' aria-label='Raccoon illustration'>
+  <defs>
+    <linearGradient id='fur' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#7a7f85'/>
+      <stop offset='100%' stop-color='#51565d'/>
+    </linearGradient>
+  </defs>
+  <ellipse cx='58' cy='38' rx='16' ry='26' fill='#51565d' transform='rotate(-25 58 38)'/>
+  <ellipse cx='162' cy='38' rx='16' ry='26' fill='#51565d' transform='rotate(25 162 38)'/>
+  <ellipse cx='110' cy='86' rx='76' ry='62' fill='url(#fur)'/>
+  <ellipse cx='110' cy='95' rx='56' ry='44' fill='#d9d2c4'/>
+  <path d='M58 80c18-18 86-18 104 0-8 24-34 38-52 38S66 104 58 80Z' fill='#23262b'/>
+  <ellipse cx='82' cy='82' rx='14' ry='18' fill='#0e1013'/>
+  <ellipse cx='138' cy='82' rx='14' ry='18' fill='#0e1013'/>
+  <circle cx='84' cy='82' r='4' fill='#fff7ea'/>
+  <circle cx='136' cy='82' r='4' fill='#fff7ea'/>
+  <ellipse cx='110' cy='108' rx='10' ry='8' fill='#2f3338'/>
+  <path d='M100 120c8 8 12 8 20 0' stroke='#2f3338' stroke-width='4' fill='none' stroke-linecap='round'/>
+  <path d='M32 132c30 12 126 12 156 0' stroke='#2a6048' stroke-width='10' fill='none' stroke-linecap='round'/>
+</svg>
+"""
+
+
+def render_metric_chips(digests: list[dict], jobs: list[dict]) -> str:
+    recent = digests[:7]
+    news_count = sum(len(item.get("relevant_news", [])) for item in recent)
+    article_count = sum(len(item.get("relevant_articles", [])) for item in recent)
+    grant_count = sum(len(item.get("relevant_grants", [])) for item in recent)
+    return "".join(
+        [
+            f"<div class='metric-chip'><span>Open jobs</span><strong>{len(jobs)}</strong></div>",
+            f"<div class='metric-chip'><span>News this week</span><strong>{news_count}</strong></div>",
+            f"<div class='metric-chip'><span>Articles this week</span><strong>{article_count}</strong></div>",
+            f"<div class='metric-chip'><span>Grants this week</span><strong>{grant_count}</strong></div>",
+        ]
+    )
+
+
 def render_digest_section(digest: dict) -> str:
     digest_date = _clean(digest.get("date", "unknown"))
     return (
         f"<section id='{digest_date}' class='digest-card'>"
+        "<div class='section-heading'>"
         f"<h2>{digest_date}</h2>"
+        "<span class='section-tag'>Daily salvage</span>"
+        "</div>"
         "<div class='digest-grid'>"
-        "<div><h3>News</h3>"
+        "<div class='column-card'><h3>News</h3>"
         + render_item_list(digest.get("relevant_news", []), "No relevant news items.", None, None)
         + "</div>"
-        "<div><h3>Articles</h3>"
+        "<div class='column-card'><h3>Articles</h3>"
         + render_item_list(digest.get("relevant_articles", []), "No high-relevance papers.", "relevance_score", "recommended_action")
         + "</div>"
-        "<div><h3>Grants</h3>"
+        "<div class='column-card'><h3>Grants</h3>"
         + render_item_list(digest.get("relevant_grants", []), "No high-fit grant opportunities.", "relevance_score", "next_step")
         + "</div>"
         "</div>"
@@ -207,49 +250,81 @@ def render_index(state: dict, public_url: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest</title>
   <style>
-    :root {{ --bg:#f4f1ea; --panel:#fffdf8; --ink:#1f2a1f; --muted:#5d6b61; --line:#d8d2c5; --accent:#245c45; --accent-soft:#dceee5; }}
+    :root {{ --bg:#ede6d8; --bg-deep:#d9cfbe; --panel:#fffaf0; --panel-strong:#f6eedf; --ink:#211f1a; --muted:#655d52; --line:#d4c4aa; --accent:#355f47; --accent-soft:#dce8df; --scrap:#7e5738; --night:#20252b; --sun:#d28f2c; }}
     * {{ box-sizing:border-box; }}
-    body {{ margin:0; font-family:Georgia, "Times New Roman", serif; background:linear-gradient(180deg, #f8f5ef 0%, var(--bg) 100%); color:var(--ink); }}
+    body {{ margin:0; font-family:Georgia, "Times New Roman", serif; background:radial-gradient(circle at top, rgba(210,143,44,0.18), transparent 22%), linear-gradient(180deg, #f5efe2 0%, var(--bg) 48%, var(--bg-deep) 100%); color:var(--ink); }}
     a {{ color:var(--accent); }}
-    .layout {{ display:grid; grid-template-columns:280px 1fr; min-height:100vh; }}
-    .sidebar {{ position:sticky; top:0; align-self:start; height:100vh; overflow:auto; padding:24px; background:#1f3127; color:#eef4ef; }}
-    .sidebar a {{ color:#eef4ef; text-decoration:none; }}
+    .layout {{ display:grid; grid-template-columns:300px 1fr; min-height:100vh; }}
+    .sidebar {{ position:sticky; top:0; align-self:start; height:100vh; overflow:auto; padding:28px; background:linear-gradient(180deg, #1f2529 0%, #29353c 55%, #355f47 100%); color:#f4efe6; border-right:1px solid rgba(255,255,255,0.08); }}
+    .sidebar a {{ color:#f6ead3; text-decoration:none; }}
     .sidebar ul {{ list-style:none; padding:0; margin:12px 0 0; }}
     .sidebar li {{ margin:0 0 10px; }}
-    .content {{ padding:32px; }}
-    .hero, .digest-card, .jobs-card {{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:24px; box-shadow:0 12px 30px rgba(31,42,31,0.06); margin-bottom:24px; }}
+    .sidebar .nav-caption {{ color:#d6cab7; text-transform:uppercase; letter-spacing:0.12em; font-size:0.72rem; margin:28px 0 10px; }}
+    .content {{ padding:36px; }}
+    .hero, .digest-card, .jobs-card {{ background:rgba(255,250,240,0.92); border:1px solid rgba(126,87,56,0.18); border-radius:26px; padding:26px; box-shadow:0 18px 44px rgba(44,31,18,0.08); margin-bottom:24px; backdrop-filter:blur(10px); }}
+    .hero {{ position:relative; overflow:hidden; padding:30px; background:linear-gradient(135deg, rgba(255,250,240,0.96), rgba(244,232,214,0.92)); }}
+    .hero:after {{ content:""; position:absolute; inset:auto -60px -70px auto; width:240px; height:240px; background:radial-gradient(circle, rgba(53,95,71,0.22), transparent 65%); }}
+    .hero-copy {{ max-width:700px; position:relative; z-index:1; }}
     .hero p, .meta, .empty {{ color:var(--muted); }}
+    .brand-kicker {{ display:inline-block; font-size:0.78rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--scrap); margin-bottom:10px; }}
+    .hero-shell {{ display:flex; gap:28px; align-items:center; justify-content:space-between; }}
+    .hero h1 {{ margin:0 0 10px; font-size:clamp(2rem, 4vw, 3.2rem); line-height:1; }}
+    .hero-lede {{ font-size:1.05rem; max-width:58ch; }}
+    .raccoon-badge {{ width:170px; min-width:170px; filter:drop-shadow(0 16px 22px rgba(33,31,26,0.18)); }}
+    .metrics {{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; margin-top:22px; position:relative; z-index:1; }}
+    .metric-chip {{ background:rgba(255,255,255,0.55); border:1px solid rgba(53,95,71,0.14); border-radius:18px; padding:14px 16px; }}
+    .metric-chip span {{ display:block; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }}
+    .metric-chip strong {{ display:block; margin-top:6px; font-size:1.5rem; color:var(--night); }}
     .jobs-card h2, .digest-card h2 {{ margin-top:0; }}
-    .jobs-table {{ width:100%; border-collapse:collapse; font-size:0.96rem; }}
-    .jobs-table th, .jobs-table td {{ border-bottom:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top; }}
-    .jobs-table thead th {{ background:var(--accent-soft); }}
-    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; }}
+    .section-heading {{ display:flex; align-items:center; justify-content:space-between; gap:14px; }}
+    .section-tag {{ padding:6px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:0.8rem; }}
+    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; border-radius:18px; overflow:hidden; }}
+    .jobs-table th, .jobs-table td {{ border-bottom:1px solid rgba(126,87,56,0.15); padding:12px 14px; text-align:left; vertical-align:top; }}
+    .jobs-table thead th {{ background:linear-gradient(180deg, #e4eadf, #d6e2d9); font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#325742; }}
+    .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.48); }}
+    .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.72); }}
+    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; margin-top:16px; }}
+    .column-card {{ background:var(--panel-strong); border:1px solid rgba(126,87,56,0.12); border-radius:18px; padding:16px; }}
+    .column-card h3 {{ margin:0 0 14px; }}
     .item-list {{ list-style:none; padding:0; margin:0; }}
     .item-list li {{ padding:0 0 14px; margin:0 0 14px; border-bottom:1px solid var(--line); }}
     .item-list li:last-child {{ margin-bottom:0; border-bottom:none; padding-bottom:0; }}
-    .item-list p {{ margin:8px 0 0; color:var(--muted); }}
+    .item-list a, .jobs-table a {{ font-weight:700; text-decoration:none; }}
+    .item-list a:hover, .jobs-table a:hover {{ text-decoration:underline; }}
+    .item-list p {{ margin:8px 0 0; color:var(--muted); font-size:0.96rem; }}
     .empty-cell {{ color:var(--muted); text-align:center; }}
-    @media (max-width: 980px) {{ .layout {{ grid-template-columns:1fr; }} .sidebar {{ position:relative; height:auto; }} .digest-grid {{ grid-template-columns:1fr; }} .content {{ padding:18px; }} }}
+    @media (max-width: 1120px) {{ .metrics {{ grid-template-columns:repeat(2, minmax(0, 1fr)); }} .hero-shell {{ flex-direction:column; align-items:flex-start; }} .raccoon-badge {{ width:132px; min-width:132px; }} }}
+    @media (max-width: 980px) {{ .layout {{ grid-template-columns:1fr; }} .sidebar {{ position:relative; height:auto; }} .digest-grid {{ grid-template-columns:1fr; }} .content {{ padding:18px; }} .metrics {{ grid-template-columns:1fr 1fr; }} }}
+    @media (max-width: 640px) {{ .metrics {{ grid-template-columns:1fr; }} .jobs-table {{ display:block; overflow-x:auto; }} }}
   </style>
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
+      <div class="brand-kicker">Junkyard Racoon</div>
       <h1>Lab Digest</h1>
-      <p>Latest update: {latest_date}</p>
+      <p>Latest salvage run: {latest_date}</p>
+      <div class="nav-caption">Jump To</div>
       <ul>{''.join(sidebar_links)}</ul>
-      <h2>Daily Pages</h2>
+      <div class="nav-caption">Daily Pages</div>
       <ul>{''.join(archive_links)}</ul>
     </aside>
     <main class="content">
       <section class="hero">
-        <h1>Daily Research Digest</h1>
-        <p>Public URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
-        <p>This page appends recent daily digests and keeps one continuously updated jobs table at the top.</p>
+        <div class="hero-shell">
+          <div class="hero-copy">
+            <div class="brand-kicker">Field Notes, Salvaged Nightly</div>
+            <h1>Daily Research Digest</h1>
+            <p class="hero-lede">A cleaner front door for the lab: rolling intelligence on news, articles, grants, and one continuously updated jobs table that stays useful between runs.</p>
+            <p>Public URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
+          </div>
+          {render_raccoon_badge()}
+        </div>
+        <div class="metrics">{render_metric_chips(digests, jobs)}</div>
       </section>
       <section id="jobs" class="jobs-card">
         <h2>Open Jobs</h2>
-        <p class="meta">Continuously updated from the jobs-tagged newsletter flow.</p>
+        <p class="meta">Continuously updated from the jobs-tagged newsletter flow. This table is the persistent board; daily digest entries below cover news, grants, and articles.</p>
         {render_jobs_table(jobs)}
       </section>
       {''.join(render_digest_section(digest) for digest in digests)}
@@ -269,20 +344,27 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest {digest_date}</title>
   <style>
-    body {{ max-width: 1100px; margin: 0 auto; padding: 24px; font-family: Georgia, "Times New Roman", serif; background:#f8f5ef; color:#1f2a1f; }}
-    .panel {{ background:#fffdf8; border:1px solid #d8d2c5; border-radius:18px; padding:24px; margin-bottom:20px; }}
-    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; }}
+    body {{ max-width:1180px; margin:0 auto; padding:28px; font-family:Georgia, "Times New Roman", serif; background:linear-gradient(180deg, #f7f1e4 0%, #e9dfcc 100%); color:#1f2a1f; }}
+    .panel {{ background:#fffaf0; border:1px solid #d4c4aa; border-radius:22px; padding:24px; margin-bottom:20px; box-shadow:0 18px 40px rgba(44,31,18,0.08); }}
+    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; margin-top:14px; }}
+    .column-card {{ background:#f6eedf; border:1px solid rgba(126,87,56,0.12); border-radius:18px; padding:16px; }}
     .item-list {{ list-style:none; padding:0; margin:0; }}
     .item-list li {{ padding:0 0 14px; margin:0 0 14px; border-bottom:1px solid #d8d2c5; }}
     .item-list li:last-child {{ border-bottom:none; margin-bottom:0; padding-bottom:0; }}
-    .jobs-table {{ width:100%; border-collapse:collapse; }}
+    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; }}
     .jobs-table th, .jobs-table td {{ border-bottom:1px solid #d8d2c5; padding:10px 12px; text-align:left; vertical-align:top; }}
-    @media (max-width: 980px) {{ .digest-grid {{ grid-template-columns:1fr; }} }}
+    .jobs-table thead th {{ background:#dce8df; text-transform:uppercase; letter-spacing:0.08em; font-size:0.82rem; color:#355f47; }}
+    .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.45); }}
+    .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.75); }}
+    .item-list a, .jobs-table a {{ color:#355f47; font-weight:700; text-decoration:none; }}
+    .item-list a:hover, .jobs-table a:hover {{ text-decoration:underline; }}
+    @media (max-width:980px) {{ .digest-grid {{ grid-template-columns:1fr; }} }}
   </style>
 </head>
 <body>
   <div class="panel">
     <p><a href="index.html">Back to digest index</a></p>
+    <div style="letter-spacing:.16em;text-transform:uppercase;color:#7e5738;font-size:.78rem;">Junkyard Racoon</div>
     <h1>Daily Digest {digest_date}</h1>
     <p>Base URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
   </div>
