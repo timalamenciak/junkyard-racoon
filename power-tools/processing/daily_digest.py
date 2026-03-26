@@ -16,6 +16,7 @@ def main() -> None:
     ensure_data_dirs()
     scored_articles = load_json(PROCESSING_DIR / "scored_articles.json", default={})
     scored_grants = load_json(PROCESSING_DIR / "scored_grants.json", default={})
+    scored_jobs = load_json(PROCESSING_DIR / "scored_jobs.json", default={})
     todos = load_json(PROCESSING_DIR / "obsidian_todos.json", default={})
     publications = load_json(INGEST_DIR / "collaborator_publications.json", default={})
     news = load_json(INGEST_DIR / "news_items.json", default={})
@@ -27,7 +28,7 @@ def main() -> None:
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
     prioritized_todos = todos.get("items", [])[:20]
     collaborator_items = [item for item in publications.get("items", []) if not item.get("error")][:10]
-    open_jobs = jobs.get("items", [])
+    open_jobs = scored_jobs.get("items", []) or jobs.get("items", [])
 
     lines = [f"# Daily Lab Digest - {date_str}", ""]
     lines.append("## Research News")

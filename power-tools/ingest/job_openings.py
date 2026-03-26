@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from common.email_source_registry import route_matches_target
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
 from common.job_email_parser import parse_job_email_items
-from common.job_web_scraper import scrape_goodwork_jobs
+from common.job_web_scraper import scrape_goodwork_jobs, scrape_university_affairs_jobs
 from common.record_utils import canonicalize_url
 from common.runtime import is_test_mode
 
@@ -116,9 +116,16 @@ def load_web_job_items() -> list[dict]:
         if source.get("type") != "web_html":
             continue
         scraper = str(source.get("scraper", "")).strip().lower()
-        if scraper != "goodwork":
+        if scraper == "goodwork":
+            scraped = scrape_goodwork_jobs(source["url"], max_items=int(source.get("max_items", 25)))
+        elif scraper == "university_affairs":
+            scraped = scrape_university_affairs_jobs(
+                source["url"],
+                max_items=int(source.get("max_items", 60)),
+                keywords=[str(value) for value in source.get("keywords", []) if str(value).strip()],
+            )
+        else:
             continue
-        scraped = scrape_goodwork_jobs(source["url"], max_items=int(source.get("max_items", 25)))
         for item in scraped:
             item["tags"] = list(source.get("tags", ["jobs", "web"]))
             dedupe_key = "||".join(

@@ -4,3 +4,25 @@ sources:
     scraper: goodwork
     url: https://www.goodwork.ca/jobs
     max_items: 25
+
+  - name: University Affairs Academic Jobs
+    type: web_html
+    scraper: university_affairs
+    url: https://universityaffairs.ca/search-jobs/
+    max_items: 60
+    keywords:
+      - restoration
+      - conservation
+      - biodiversity
+      - ecology
+      - environmental
+      - forestry
+      - natural resources
+      - wildlife
+      - geography
+      - biology
+      - postdoctoral
+      - postdoc
+      - phd
+      - assistant professor
+      - research associate

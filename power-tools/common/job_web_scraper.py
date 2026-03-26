@@ -13,6 +13,7 @@ from common.job_email_parser import classify_job_category
 
 
 GOODWORK_LINK_RE = re.compile(r"/jobs/[^\"'#?]*-\d{4,}")
+UNIVERSITY_AFFAIRS_LINK_RE = re.compile(r"job_id=\d+")
 STATUS_RE = re.compile(r"Current status:\s*([^\.]+)", re.IGNORECASE)
 POSTED_RE = re.compile(r"Date posted:\s*([A-Za-z]{3,9}\s+\d{1,2}\s+\d{4})", re.IGNORECASE)
 DETAIL_FIELD_PATTERNS = {
@@ -25,6 +26,14 @@ DETAIL_FIELD_PATTERNS = {
 
 def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _truncate_summary(text: str, limit: int = 220) -> str:
+    cleaned = _clean(text)
+    if len(cleaned) <= limit:
+        return cleaned
+    truncated = cleaned[:limit].rsplit(" ", 1)[0].strip()
+    return f"{truncated}..."
 
 
 def _extract_detail_field(text: str, field_name: str) -> str:
@@ -71,7 +80,7 @@ def parse_goodwork_detail(html: str, url: str) -> dict:
     if status_match:
         status = _clean(status_match.group(1))
     paragraphs = [_clean(node.get_text(" ", strip=True)) for node in soup.find_all("p")]
-    summary = " ".join(value for value in paragraphs[:3] if value)[:1200]
+    summary = _truncate_summary(" ".join(value for value in paragraphs[:3] if value))
     category = classify_job_category(title, summary + " " + text[:2000], organization) or "conservation"
     return {
         "source_type": "job_web",
@@ -102,4 +111,76 @@ def scrape_goodwork_jobs(listing_url: str, max_items: int = 25, fetcher=fetch_by
         if not item.get("title") or not item.get("organization"):
             continue
         items.append(item)
+    return items
+
+
+def _extract_university_affairs_result(anchor, base_url: str) -> dict:
+    title = _clean(anchor.get_text(" ", strip=True))
+    link = urljoin(base_url, anchor.get("href", ""))
+    metadata: list[str] = []
+    for element in anchor.next_elements:
+        if element == anchor:
+            continue
+        if getattr(element, "name", None) == "a" and element is not anchor and UNIVERSITY_AFFAIRS_LINK_RE.search(element.get("href", "")):
+            break
+        if isinstance(element, str):
+            value = _clean(element)
+            if value and value != title:
+                metadata.append(value)
+    organization = ""
+    location = ""
+    posted_date = ""
+    for value in metadata:
+        lowered = value.lower()
+        if lowered.startswith("location "):
+            location = value.split(" ", 1)[1].strip()
+        elif lowered.startswith("posting date "):
+            posted_date = value.split(" ", 2)[2].strip()
+        elif not organization and not lowered.startswith("sort by") and "results" not in lowered:
+            organization = value
+    summary = _truncate_summary(" ".join(part for part in [organization, location, posted_date] if part))
+    return {
+        "source_type": "job_web",
+        "source": "University Affairs",
+        "title": title,
+        "organization": organization,
+        "location": location,
+        "pay": "",
+        "posted_date": posted_date,
+        "application_deadline": "",
+        "published": posted_date or "unknown",
+        "category": "academic",
+        "link": link,
+        "summary": summary,
+        "status": "open",
+    }
+
+
+def scrape_university_affairs_jobs(
+    listing_url: str,
+    max_items: int = 100,
+    keywords: list[str] | None = None,
+    fetcher=fetch_bytes,
+) -> list[dict]:
+    html = fetcher(listing_url).decode("utf-8", errors="replace")
+    soup = BeautifulSoup(html, "html.parser")
+    items: list[dict] = []
+    seen: set[str] = set()
+    keyword_list = [value.lower() for value in (keywords or []) if str(value).strip()]
+    for anchor in soup.find_all("a", href=True):
+        href = anchor.get("href", "")
+        if not UNIVERSITY_AFFAIRS_LINK_RE.search(href):
+            continue
+        item = _extract_university_affairs_result(anchor, listing_url)
+        if not item["title"] or not item["organization"]:
+            continue
+        haystack = f"{item['title']} {item['organization']} {item['location']} {item['summary']}".lower()
+        if keyword_list and not any(keyword in haystack for keyword in keyword_list):
+            continue
+        if item["link"] in seen:
+            continue
+        seen.add(item["link"])
+        items.append(item)
+        if len(items) >= max_items:
+            break
     return items

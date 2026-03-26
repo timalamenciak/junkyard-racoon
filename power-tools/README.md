@@ -21,6 +21,7 @@ Turns raw records into scored, summarized, and prioritized artifacts.
 
 - `processing/score_articles.py`
 - `processing/score_grants.py`
+- `processing/score_jobs.py`
 - `processing/obsidian_todos.py`
 - `processing/daily_digest.py`
 

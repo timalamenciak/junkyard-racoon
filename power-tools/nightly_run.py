@@ -23,6 +23,7 @@ STEPS = [
     {"label": "ingest jobs (email merge)", "script": ROOT / "ingest" / "job_openings.py"},
     {"label": "score articles", "script": ROOT / "processing" / "score_articles.py"},
     {"label": "score grants", "script": ROOT / "processing" / "score_grants.py"},
+    {"label": "score jobs", "script": ROOT / "processing" / "score_jobs.py"},
     {"label": "extract obsidian todos", "script": ROOT / "processing" / "obsidian_todos.py"},
     {"label": "build daily digest", "script": ROOT / "processing" / "daily_digest.py"},
     {"label": "publish hedgedoc", "script": ROOT / "output" / "publish_hedgedoc.py", "allow_failure": True},
