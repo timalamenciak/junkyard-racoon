@@ -15,13 +15,17 @@ def main() -> None:
     output_cfg = load_yaml(CONFIGS_DIR / "output.yaml")
     digest = load_json(OUTPUT_DIR / "daily_digest.json", default={})
     publish = load_json(OUTPUT_DIR / "hedgedoc_publish.json", default={})
+    static_publish = load_json(OUTPUT_DIR / "static_digest_publish.json", default={})
     if not digest:
         raise SystemExit("No digest found. Run processing/daily_digest.py first.")
 
     lines = [f"Daily Lab Digest {digest.get('date', 'unknown')}"]
+    news = digest.get("relevant_news", [])
     relevant = digest.get("relevant_articles", [])
     grants = digest.get("relevant_grants", [])
     todos = digest.get("prioritized_todos", [])
+    jobs = digest.get("open_jobs", [])
+    lines.append(f"Research news: {len(news)}")
     if relevant:
         lines.append(f"Relevant papers: {len(relevant)}")
         for article in relevant[:5]:
@@ -30,7 +34,13 @@ def main() -> None:
         lines.append("Relevant papers: 0")
 
     lines.append(f"High-fit grants: {len(grants)}")
+    lines.append(f"Open jobs: {len(jobs)}")
     lines.append(f"Priority tasks: {len(todos)}")
+
+    if static_publish.get("public_url"):
+        lines.append("")
+        lines.append("Static digest:")
+        lines.append(f"  Site: {static_publish['public_url']}")
 
     if publish.get("articles_url") or publish.get("grants_url") or publish.get("tasks_url") or publish.get("jobs_url"):
         lines.append("")

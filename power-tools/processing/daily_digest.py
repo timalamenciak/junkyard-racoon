@@ -18,9 +18,11 @@ def main() -> None:
     scored_grants = load_json(PROCESSING_DIR / "scored_grants.json", default={})
     todos = load_json(PROCESSING_DIR / "obsidian_todos.json", default={})
     publications = load_json(INGEST_DIR / "collaborator_publications.json", default={})
+    news = load_json(INGEST_DIR / "news_items.json", default={})
     jobs = load_json(INGEST_DIR / "job_openings.json", default={})
     date_str = datetime.date.today().isoformat()
 
+    relevant_news = news.get("relevant_items", [])[:10]
     relevant_articles = scored_articles.get("relevant_items", [])[:10]
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
     prioritized_todos = todos.get("items", [])[:20]
@@ -28,6 +30,16 @@ def main() -> None:
     open_jobs = jobs.get("items", [])
 
     lines = [f"# Daily Lab Digest - {date_str}", ""]
+    lines.append("## Research News")
+    if relevant_news:
+        for item in relevant_news:
+            lines.append(f"- {item.get('title', '')}")
+            lines.append(f"  {item.get('summary', '')}")
+            lines.append(f"  {item.get('link', '')}")
+    else:
+        lines.append("- No relevant news items today.")
+
+    lines.append("")
     lines.append("## Relevant Papers")
     if relevant_articles:
         for article in relevant_articles:
@@ -94,12 +106,13 @@ def main() -> None:
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "date": date_str,
         "markdown": markdown,
+        "relevant_news": relevant_news,
         "relevant_articles": relevant_articles,
         "relevant_grants": relevant_grants,
         "prioritized_todos": prioritized_todos,
         "collaborator_publications": collaborator_items,
         "open_jobs": open_jobs,
-        "schema_version": 3,
+        "schema_version": 4,
     }
     dump_json(OUTPUT_DIR / "daily_digest.json", digest_payload)
     (OUTPUT_DIR / "daily_digest.md").write_text(markdown, encoding="utf-8")

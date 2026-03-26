@@ -25,7 +25,8 @@ STEPS = [
     {"label": "score grants", "script": ROOT / "processing" / "score_grants.py"},
     {"label": "extract obsidian todos", "script": ROOT / "processing" / "obsidian_todos.py"},
     {"label": "build daily digest", "script": ROOT / "processing" / "daily_digest.py"},
-    {"label": "publish hedgedoc", "script": ROOT / "output" / "publish_hedgedoc.py"},
+    {"label": "publish hedgedoc", "script": ROOT / "output" / "publish_hedgedoc.py", "allow_failure": True},
+    {"label": "publish static digest", "script": ROOT / "output" / "publish_static_digest.py"},
     {"label": "render matrix digest", "script": ROOT / "output" / "matrix_digest.py"},
     {"label": "generate podcast script", "script": ROOT / "output" / "podcast_script.py"},
 ]

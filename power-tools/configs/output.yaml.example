@@ -14,6 +14,11 @@ hedgedoc:
     jobs: lab-open-positions
   # The publisher keeps a rolling two-month window locally, publishes a fresh
   # rolling snapshot on each run, and emits archive notes when the window rolls over.
+static_site:
+  public_url: https://lab.tim-a.ca/digest/
+  # Local build output defaults to power-tools/data/output/static_digest_site.
+  # Optional deploy target on the server where nginx serves /digest/.
+  deploy_dir: /srv/lab-digest
 matrix:
   summary_file: matrix_digest.txt
 podcast:
