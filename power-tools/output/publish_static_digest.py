@@ -25,6 +25,14 @@ def _clean(value: str) -> str:
     return html.escape(str(value or "").strip())
 
 
+def _truncate_display(value: str, limit: int) -> str:
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return html.escape(text)
+    shortened = text[:limit].rsplit(" ", 1)[0].strip()
+    return html.escape(f"{shortened}...")
+
+
 def _job_key(item: dict) -> str:
     return "||".join(
         [
@@ -145,23 +153,46 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
 
 def render_jobs_table(items: list[dict]) -> str:
     rows = [
-        "<table class='jobs-table'><thead><tr><th>Title</th><th>Organization</th><th>Location</th><th>Rate of Pay</th><th>Posted Date</th><th>Application Deadline</th></tr></thead><tbody>"
+        "<table class='jobs-table'><thead><tr><th>Title</th><th>Organization</th><th>Location</th><th>Rate of Pay</th><th>Posted Date</th><th>Deadline</th><th>Student Fit</th><th>Tags</th></tr></thead><tbody>"
     ]
     if not items:
-        rows.append("<tr><td colspan='6' class='empty-cell'>No open positions right now.</td></tr>")
+        rows.append("<tr><td colspan='8' class='empty-cell'>No open positions right now.</td></tr>")
     for item in items:
-        title = _clean(item.get("title", "Untitled role"))
+        raw_title = str(item.get("title", "Untitled role")).strip()
+        title = _truncate_display(raw_title, 78)
         link = str(item.get("link", "")).strip()
         if link:
-            title = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+            title = (
+                f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer' "
+                f"title='{html.escape(raw_title, quote=True)}'>{title}</a>"
+            )
+        score = ""
+        if item.get("student_relevance_score") is not None:
+            try:
+                score = f"{int(float(item.get('student_relevance_score', 0.0)) * 100)}%"
+            except Exception:
+                score = ""
+        fit_reason = _truncate_display(item.get("student_fit_reason", ""), 90) if item.get("student_fit_reason") else ""
+        fit_cell = ""
+        if score or fit_reason:
+            fit_parts = []
+            if score:
+                fit_parts.append(f"<strong>{html.escape(score)}</strong>")
+            if fit_reason:
+                fit_parts.append(f"<span>{fit_reason}</span>")
+            fit_cell = "".join(fit_parts)
+        tags = [str(value).strip() for value in item.get("student_tags", []) if str(value).strip()]
+        tag_html = " ".join(f"<span class='job-tag'>{html.escape(tag)}</span>" for tag in tags[:5])
         rows.append(
             "<tr>"
-            f"<td>{title}</td>"
-            f"<td>{_clean(item.get('organization', ''))}</td>"
-            f"<td>{_clean(item.get('location', ''))}</td>"
-            f"<td>{_clean(item.get('pay', ''))}</td>"
-            f"<td>{_clean(item.get('posted_date', ''))}</td>"
-            f"<td>{_clean(item.get('application_deadline', ''))}</td>"
+            f"<td data-label='Title'>{title}</td>"
+            f"<td data-label='Organization' title='{html.escape(str(item.get('organization', '')), quote=True)}'>{_truncate_display(item.get('organization', ''), 42)}</td>"
+            f"<td data-label='Location' title='{html.escape(str(item.get('location', '')), quote=True)}'>{_truncate_display(item.get('location', ''), 34)}</td>"
+            f"<td data-label='Rate of Pay' title='{html.escape(str(item.get('pay', '')), quote=True)}'>{_truncate_display(item.get('pay', '') or item.get('pay_normalized', ''), 28)}</td>"
+            f"<td data-label='Posted Date'>{_truncate_display(item.get('posted_date', ''), 18)}</td>"
+            f"<td data-label='Deadline' title='{html.escape(str(item.get('application_deadline', '')), quote=True)}'>{_truncate_display(item.get('application_deadline', ''), 26)}</td>"
+            f"<td data-label='Student Fit' class='fit-cell'>{fit_cell}</td>"
+            f"<td data-label='Tags' class='tags-cell'>{tag_html}</td>"
             "</tr>"
         )
     rows.append("</tbody></table>")
@@ -278,11 +309,16 @@ def render_index(state: dict, public_url: str) -> str:
     .jobs-card h2, .digest-card h2 {{ margin-top:0; }}
     .section-heading {{ display:flex; align-items:center; justify-content:space-between; gap:14px; }}
     .section-tag {{ padding:6px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:0.8rem; }}
-    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; border-radius:18px; overflow:hidden; }}
+    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; border-radius:18px; overflow:hidden; table-layout:fixed; }}
     .jobs-table th, .jobs-table td {{ border-bottom:1px solid rgba(126,87,56,0.15); padding:12px 14px; text-align:left; vertical-align:top; }}
     .jobs-table thead th {{ background:linear-gradient(180deg, #e4eadf, #d6e2d9); font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#325742; }}
     .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.48); }}
     .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.72); }}
+    .jobs-table td {{ overflow-wrap:anywhere; }}
+    .fit-cell strong {{ display:block; color:var(--night); }}
+    .fit-cell span {{ display:block; margin-top:4px; color:var(--muted); font-size:0.92rem; }}
+    .tags-cell {{ min-width:180px; }}
+    .job-tag {{ display:inline-block; margin:0 6px 6px 0; padding:5px 9px; border-radius:999px; background:rgba(53,95,71,0.12); color:var(--accent); font-size:0.78rem; line-height:1; }}
     .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; margin-top:16px; }}
     .column-card {{ background:var(--panel-strong); border:1px solid rgba(126,87,56,0.12); border-radius:18px; padding:16px; }}
     .column-card h3 {{ margin:0 0 14px; }}
@@ -295,7 +331,14 @@ def render_index(state: dict, public_url: str) -> str:
     .empty-cell {{ color:var(--muted); text-align:center; }}
     @media (max-width: 1120px) {{ .metrics {{ grid-template-columns:repeat(2, minmax(0, 1fr)); }} .hero-shell {{ flex-direction:column; align-items:flex-start; }} .raccoon-badge {{ width:132px; min-width:132px; }} }}
     @media (max-width: 980px) {{ .layout {{ grid-template-columns:1fr; }} .sidebar {{ position:relative; height:auto; }} .digest-grid {{ grid-template-columns:1fr; }} .content {{ padding:18px; }} .metrics {{ grid-template-columns:1fr 1fr; }} }}
-    @media (max-width: 640px) {{ .metrics {{ grid-template-columns:1fr; }} .jobs-table {{ display:block; overflow-x:auto; }} }}
+    @media (max-width: 760px) {{
+      .metrics {{ grid-template-columns:1fr; }}
+      .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr {{ display:block; width:100%; }}
+      .jobs-table thead {{ display:none; }}
+      .jobs-table tbody tr {{ margin-bottom:14px; border:1px solid rgba(126,87,56,0.15); border-radius:16px; overflow:hidden; }}
+      .jobs-table td {{ display:grid; grid-template-columns:120px 1fr; gap:10px; padding:10px 12px; }}
+      .jobs-table td::before {{ content:attr(data-label); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }}
+    }}
   </style>
 </head>
 <body>
@@ -351,14 +394,25 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     .item-list {{ list-style:none; padding:0; margin:0; }}
     .item-list li {{ padding:0 0 14px; margin:0 0 14px; border-bottom:1px solid #d8d2c5; }}
     .item-list li:last-child {{ border-bottom:none; margin-bottom:0; padding-bottom:0; }}
-    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; }}
+    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }}
     .jobs-table th, .jobs-table td {{ border-bottom:1px solid #d8d2c5; padding:10px 12px; text-align:left; vertical-align:top; }}
     .jobs-table thead th {{ background:#dce8df; text-transform:uppercase; letter-spacing:0.08em; font-size:0.82rem; color:#355f47; }}
     .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.45); }}
     .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.75); }}
+    .jobs-table td {{ overflow-wrap:anywhere; }}
+    .fit-cell strong {{ display:block; color:#20252b; }}
+    .fit-cell span {{ display:block; margin-top:4px; color:#655d52; font-size:0.92rem; }}
+    .job-tag {{ display:inline-block; margin:0 6px 6px 0; padding:5px 9px; border-radius:999px; background:rgba(53,95,71,0.12); color:#355f47; font-size:0.78rem; line-height:1; }}
     .item-list a, .jobs-table a {{ color:#355f47; font-weight:700; text-decoration:none; }}
     .item-list a:hover, .jobs-table a:hover {{ text-decoration:underline; }}
     @media (max-width:980px) {{ .digest-grid {{ grid-template-columns:1fr; }} }}
+    @media (max-width:760px) {{
+      .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr {{ display:block; width:100%; }}
+      .jobs-table thead {{ display:none; }}
+      .jobs-table tbody tr {{ margin-bottom:14px; border:1px solid rgba(126,87,56,0.15); border-radius:16px; overflow:hidden; }}
+      .jobs-table td {{ display:grid; grid-template-columns:120px 1fr; gap:10px; padding:10px 12px; }}
+      .jobs-table td::before {{ content:attr(data-label); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:#655d52; }}
+    }}
   </style>
 </head>
 <body>
