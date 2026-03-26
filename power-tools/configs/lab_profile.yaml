@@ -3,6 +3,7 @@ institution: Wilfrid Laurier University
 principal_investigator: Tim Alamenciak
 article_relevance_threshold: 0.75
 grant_relevance_threshold: 0.65
+job_relevance_threshold: 0.80
 research_interests:
   - AI, semantics, and machine learning applications in ecology and conservation biology
   - Human dimensions of restoration and conservation

@@ -15,7 +15,7 @@ from common.runtime import is_test_mode
 
 
 BATCH_SIZE = 3
-DEFAULT_THRESHOLD = 0.45
+DEFAULT_THRESHOLD = 0.80
 
 
 def build_prompt(jobs: list[dict], lab_profile: dict) -> list[dict[str, str]]:

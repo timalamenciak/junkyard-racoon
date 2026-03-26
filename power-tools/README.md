@@ -41,7 +41,7 @@ Configured in `configs/lab_profile.yaml`:
 |----------|-----|---------|
 | Articles | `article_relevance_threshold` | 0.75 |
 | Grants | `grant_relevance_threshold` | 0.65 |
-| Jobs | all surfaced, sorted by student fit score | — |
+| Jobs | `job_relevance_threshold` | 0.80 |
 | News | keyword score ≥ 1 (set in `news.yaml`) | — |
 
 ---

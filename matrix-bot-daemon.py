@@ -304,42 +304,65 @@ async def sync_loop() -> None:
         await client.close()
 
 
+async def _password_login() -> None:
+    """Perform a fresh password login and cache the resulting credentials."""
+    import json as _json
+
+    if not PASSWORD:
+        logger.error("MATRIX_PASSWORD environment variable not set — cannot log in")
+        sys.exit(1)
+
+    logger.info(f"Logging in as {USER_ID} on {HOMESERVER}")
+    login_response = await client.login(PASSWORD)
+
+    if isinstance(login_response, LoginResponse):
+        logger.info(f"Login successful. Device ID: {login_response.device_id}")
+        CREDS_FILE.write_text(
+            _json.dumps({
+                "user_id": client.user_id,
+                "device_id": client.device_id,
+                "access_token": client.access_token,
+            }),
+            encoding="utf-8",
+        )
+        logger.info(f"Credentials cached to {CREDS_FILE}")
+    else:
+        status = getattr(login_response, "status_code", None)
+        message = getattr(login_response, "message", str(login_response))
+        logger.error(
+            f"Login failed for {USER_ID} on {HOMESERVER}\n"
+            f"  Error: {message}"
+            + (f" (Matrix error code: {status})" if status else "")
+            + "\n  Possible causes:"
+            "\n    - MATRIX_PASSWORD is wrong or the bot account does not exist"
+            "\n    - The homeserver has password authentication disabled"
+            "\n      (check homeserver.yaml: password_config.enabled)"
+            "\n    - The homeserver URL is incorrect"
+            "\n  First-time bootstrap: set MATRIX_PASSWORD in the environment and run"
+            "\n    python matrix-bot-daemon.py --post-digest"
+        )
+        sys.exit(1)
+
+
 async def login() -> None:
-    """Login or restore saved session."""
-    import json
+    """Restore a saved session, or fall back to password login."""
+    import json as _json
 
     if CREDS_FILE.exists():
-        logger.info("Loading saved credentials")
-        creds = json.loads(CREDS_FILE.read_text(encoding="utf-8"))
-        client.restore_login(
-            user_id=creds["user_id"],
-            device_id=creds["device_id"],
-            access_token=creds["access_token"],
-        )
-        logger.info(f"Restored session for {creds['user_id']}")
-    else:
-        if not PASSWORD:
-            logger.error("MATRIX_PASSWORD environment variable not set")
-            sys.exit(1)
-
-        logger.info(f"Logging in as {USER_ID}")
-        login_response = await client.login(PASSWORD)
-
-        if isinstance(login_response, LoginResponse):
-            logger.info(f"Login successful. Device ID: {login_response.device_id}")
-            import json
-            CREDS_FILE.write_text(
-                json.dumps({
-                    "user_id": client.user_id,
-                    "device_id": client.device_id,
-                    "access_token": client.access_token,
-                }),
-                encoding="utf-8",
+        try:
+            creds = _json.loads(CREDS_FILE.read_text(encoding="utf-8"))
+            client.restore_login(
+                user_id=creds["user_id"],
+                device_id=creds["device_id"],
+                access_token=creds["access_token"],
             )
-            logger.info(f"Credentials saved to {CREDS_FILE}")
-        else:
-            logger.error(f"Login failed: {login_response}")
-            sys.exit(1)
+            logger.info(f"Restored session for {creds['user_id']}")
+            return
+        except (KeyError, ValueError, OSError) as exc:
+            logger.warning(f"Saved credentials invalid ({exc}) — deleting and re-authenticating")
+            CREDS_FILE.unlink(missing_ok=True)
+
+    await _password_login()
 
 
 async def main() -> None:
