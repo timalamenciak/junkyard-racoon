@@ -14,7 +14,7 @@ from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, load_json, load_yaml
 def main() -> None:
     output_cfg = load_yaml(CONFIGS_DIR / "output.yaml")
     digest = load_json(OUTPUT_DIR / "daily_digest.json", default={})
-    publish = load_json(OUTPUT_DIR / "bookstack_publish.json", default={})
+    publish = load_json(OUTPUT_DIR / "hedgedoc_publish.json", default={})
     if not digest:
         raise SystemExit("No digest found. Run processing/daily_digest.py first.")
 
@@ -34,8 +34,12 @@ def main() -> None:
 
     if publish.get("articles_url") or publish.get("grants_url") or publish.get("tasks_url"):
         lines.append("")
-        lines.append("BookStack:")
+        lines.append("HedgeDoc:")
         for label, key in [("Articles", "articles_url"), ("Grants", "grants_url"), ("Tasks", "tasks_url")]:
+            if publish.get(key):
+                lines.append(f"  {label}: {publish[key]}")
+        archive_keys = [("Articles archive", "articles_archive_url"), ("Grants archive", "grants_archive_url"), ("Tasks archive", "tasks_archive_url")]
+        for label, key in archive_keys:
             if publish.get(key):
                 lines.append(f"  {label}: {publish[key]}")
 

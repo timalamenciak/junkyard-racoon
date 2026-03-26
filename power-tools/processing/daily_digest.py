@@ -63,10 +63,14 @@ def main() -> None:
     if prioritized_todos:
         for todo in prioritized_todos:
             lines.append(f"- [{todo.get('priority', 'medium')}] {todo.get('task', '')}")
+            if todo.get("project"):
+                lines.append(f"  Project: {todo.get('project', '')}")
             if todo.get("owner_guess"):
                 lines.append(f"  Likely owner: {todo.get('owner_guess', '')}")
             if todo.get("deadline_guess"):
                 lines.append(f"  Deadline cue: {todo.get('deadline_guess', '')}")
+            if todo.get("impact") or todo.get("effort"):
+                lines.append(f"  Impact/Effort: {todo.get('impact', 'unknown')}/{todo.get('effort', 'unknown')}")
             if todo.get("rationale"):
                 lines.append(f"  Why now: {todo.get('rationale', '')}")
             lines.append(f"  {todo.get('note', '')}")

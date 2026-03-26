@@ -21,7 +21,7 @@ STEPS = [
     ("score grants", ROOT / "processing" / "score_grants.py"),
     ("extract obsidian todos", ROOT / "processing" / "obsidian_todos.py"),
     ("build daily digest", ROOT / "processing" / "daily_digest.py"),
-    ("publish bookstack", ROOT / "output" / "publish_bookstack.py"),
+    ("publish hedgedoc", ROOT / "output" / "publish_hedgedoc.py"),
     ("render matrix digest", ROOT / "output" / "matrix_digest.py"),
     ("generate podcast script", ROOT / "output" / "podcast_script.py"),
 ]

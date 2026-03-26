@@ -1,13 +1,16 @@
 # Copy this file to output.yaml and fill in real values.
-# output.yaml is gitignored — never commit the real file.
-bookstack:
-  url: https://your-bookstack-instance
-  token_id: your-token-id-here
-  token_secret: your-token-secret-here
-  pages:
-    articles: 1  # page ID for journal articles + collaborator publications
-    grants: 2    # page ID for grant opportunities
-    tasks: 3     # page ID for project tasks
+# output.yaml is gitignored - never commit the real file.
+hedgedoc:
+  url: https://your-hedgedoc-instance
+  api_token: your-api-token-here
+  # Optional instead of api_token when your instance relies on browser auth.
+  session_cookie: hedgedoc.sid=replace-me
+  notes:
+    articles: lab-journal-articles
+    grants: lab-grant-opportunities
+    tasks: lab-project-tasks
+  # The publisher keeps a rolling two-month window locally, publishes a fresh
+  # rolling snapshot on each run, and emits archive notes when the window rolls over.
 matrix:
   summary_file: matrix_digest.txt
 podcast:

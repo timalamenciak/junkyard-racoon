@@ -21,13 +21,22 @@ Turns raw records into scored, summarized, and prioritized artifacts.
 - `processing/obsidian_todos.py`
 - `processing/daily_digest.py`
 
+The Obsidian task flow now:
+
+- reads each project file
+- converts each project file into a list of concrete tasks
+- asks the LLM to prioritize the combined task list by high impact and low effort first
+
 ### 3. Output
 
 Publishes or formats processed artifacts for downstream systems.
 
-- `output/publish_bookstack.py`
+- `output/publish_hedgedoc.py`
 - `output/matrix_digest.py`
 - `output/podcast_script.py`
+
+The HedgeDoc publisher now keeps rolling two-month article, grant, and task lists.
+Each run prepends a new dated section to the top of the current rollup, and when the two-month window changes it publishes the old rollup to an archive note before starting a fresh one.
 
 ## Configs
 
