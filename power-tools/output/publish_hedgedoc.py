@@ -8,6 +8,7 @@ import datetime
 import json
 import sys
 import urllib.parse
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -38,8 +39,30 @@ def publish_note(base_url: str, alias: str, markdown: str, hdrs: dict[str, str])
         headers=hdrs,
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return response.geturl()
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            final_url = response.geturl()
+            parsed_base = urllib.parse.urlparse(base_url.rstrip("/"))
+            parsed_final = urllib.parse.urlparse(final_url.rstrip("/"))
+            suspicious_paths = {"", "/", "/login", "/signin", "/auth/login"}
+            if (
+                parsed_final.netloc == parsed_base.netloc
+                and parsed_final.path in suspicious_paths
+            ):
+                raise RuntimeError(
+                    f"HedgeDoc publish for alias {alias!r} resolved to {final_url!r} instead of a note URL. "
+                    "This usually means the request was redirected because auth failed or the endpoint is not accepted by this HedgeDoc instance."
+                )
+            return final_url
+    except urllib.error.HTTPError as exc:
+        body = ""
+        try:
+            body = exc.read().decode("utf-8", errors="replace")[:400]
+        except Exception:
+            body = ""
+        raise RuntimeError(
+            f"HedgeDoc publish failed for alias {alias!r} with HTTP {exc.code}. {body}".strip()
+        ) from exc
 
 
 def bimonthly_period(target_date: datetime.date) -> dict[str, str]:
@@ -170,8 +193,125 @@ def render_archive_note(title: str, period_start: str, period_end: str, content:
     return "\n".join(lines)
 
 
-def default_section_state() -> dict[str, str]:
-    return {"content": "", "latest_snapshot_alias": "", "latest_snapshot_url": ""}
+def default_section_state() -> dict:
+    return {"content": "", "latest_snapshot_alias": "", "latest_snapshot_url": "", "records": []}
+
+
+def _clean_text(value: str) -> str:
+    return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _job_key(item: dict) -> str:
+    return "||".join(
+        [
+            _clean_text(item.get("title", "")).lower(),
+            _clean_text(item.get("organization", "")).lower(),
+            _clean_text(item.get("location", "")).lower(),
+            _clean_text(item.get("link", "")),
+        ]
+    )
+
+
+def _parse_date(value: str) -> datetime.date | None:
+    raw = str(value or "").strip()
+    if not raw or raw == "unknown":
+        return None
+    for fmt in ("%Y-%m-%d", "%b %d, %Y", "%B %d, %Y"):
+        try:
+            return datetime.datetime.strptime(raw, fmt).date()
+        except Exception:
+            continue
+    try:
+        return datetime.date.fromisoformat(raw[:10])
+    except Exception:
+        return None
+
+
+def merge_job_records(existing: list[dict], incoming: list[dict], current_date: datetime.date) -> list[dict]:
+    merged: dict[str, dict] = {}
+    for item in existing:
+        if isinstance(item, dict):
+            merged[_job_key(item)] = dict(item)
+    for item in incoming:
+        if not isinstance(item, dict):
+            continue
+        key = _job_key(item)
+        if not key.strip("|"):
+            continue
+        previous = merged.get(key, {})
+        combined = dict(previous)
+        combined.update(item)
+        combined["first_seen_date"] = previous.get("first_seen_date", current_date.isoformat())
+        combined["last_seen_date"] = current_date.isoformat()
+        merged[key] = combined
+    kept: list[dict] = []
+    for item in merged.values():
+        deadline = _parse_date(item.get("application_deadline", ""))
+        first_seen = _parse_date(item.get("first_seen_date", ""))
+        posted = _parse_date(item.get("posted_date", "")) or first_seen
+        if deadline and deadline < current_date:
+            continue
+        if not deadline and posted and (current_date - posted).days > 120:
+            continue
+        kept.append(item)
+    kept.sort(
+        key=lambda item: (
+            item.get("category", ""),
+            _parse_date(item.get("application_deadline", "")) or datetime.date.max,
+            _parse_date(item.get("posted_date", "")) or datetime.date.max,
+            _clean_text(item.get("title", "")).lower(),
+        )
+    )
+    return kept
+
+
+def _render_job_table(items: list[dict]) -> list[str]:
+    lines = [
+        "| Title | Organization | Location | Rate of Pay | Posted Date | Application Deadline |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    if not items:
+        lines.append("| No open positions right now. |  |  |  |  |  |")
+        return lines
+    for item in items:
+        title = _clean_text(item.get("title", "")) or "Untitled role"
+        link = _clean_text(item.get("link", ""))
+        if link:
+            title = f"[{title}]({link})"
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    title,
+                    _clean_text(item.get("organization", "")),
+                    _clean_text(item.get("location", "")),
+                    _clean_text(item.get("pay", "")),
+                    _clean_text(item.get("posted_date", "")),
+                    _clean_text(item.get("application_deadline", "")),
+                ]
+            )
+            + " |"
+        )
+    return lines
+
+
+def build_jobs_body(records: list[dict], current_date: datetime.date) -> str:
+    active = merge_job_records(records, [], current_date)
+    conservation = [item for item in active if item.get("category") == "conservation"]
+    academic = [item for item in active if item.get("category") == "academic"]
+    lines = [
+        f"_Open positions tracked as of {current_date.isoformat()}_",
+        "",
+        "### Conservation Jobs",
+        "",
+        *_render_job_table(conservation),
+        "",
+        "### Academic Jobs: Biodiversity Restoration And Conservation",
+        "",
+        *_render_job_table(academic),
+        "",
+    ]
+    return "\n".join(lines).strip()
 
 
 def load_rollup_state(current_period: dict[str, str]) -> dict:
@@ -235,6 +375,7 @@ def main() -> None:
         "articles": aliases.get("articles"),
         "grants": aliases.get("grants"),
         "tasks": aliases.get("tasks"),
+        "jobs": aliases.get("jobs"),
     }
     missing = [key for key, value in required.items() if not value]
     if missing:
@@ -249,6 +390,7 @@ def main() -> None:
         "articles": "Journal Articles",
         "grants": "Grant Opportunities",
         "tasks": "Project Tasks",
+        "jobs": "Open Positions",
     }
     section_bodies = {
         "articles": build_articles_body(digest),
@@ -266,7 +408,10 @@ def main() -> None:
         old_end = str(state.get("period_end", ""))
         for label, base_alias in required.items():
             section_state = ensure_section_state(state, label)
-            existing_content = section_state.get("content", "").strip()
+            if label == "jobs":
+                existing_content = build_jobs_body(section_state.get("records", []), current_date)
+            else:
+                existing_content = section_state.get("content", "").strip()
             if not existing_content:
                 continue
             archive_payloads.append(
@@ -277,11 +422,12 @@ def main() -> None:
                 )
             )
 
+        next_jobs_records = merge_job_records(ensure_section_state(state, "jobs").get("records", []), [], current_date)
         state = {
             "period_key": current_period["key"],
             "period_start": current_period["start"],
             "period_end": current_period["end"],
-            "sections": {},
+            "sections": {"jobs": {**default_section_state(), "records": next_jobs_records}},
         }
 
     state["period_key"] = current_period["key"]
@@ -291,14 +437,23 @@ def main() -> None:
     snapshot_payloads: list[tuple[str, str, str]] = []
     for label, base_alias in required.items():
         section_state = ensure_section_state(state, label)
-        today_entry = build_daily_entry(date_str, section_bodies[label])
-        section_state["content"] = prepend_entry(section_state.get("content", ""), today_entry)
-        snapshot = render_live_note(
-            section_titles[label],
-            current_period["start"],
-            current_period["end"],
-            section_state["content"],
-        )
+        if label == "jobs":
+            section_state["records"] = merge_job_records(section_state.get("records", []), digest.get("open_jobs", []), current_date)
+            snapshot = render_live_note(
+                section_titles[label],
+                current_period["start"],
+                current_period["end"],
+                build_jobs_body(section_state.get("records", []), current_date),
+            )
+        else:
+            today_entry = build_daily_entry(date_str, section_bodies[label])
+            section_state["content"] = prepend_entry(section_state.get("content", ""), today_entry)
+            snapshot = render_live_note(
+                section_titles[label],
+                current_period["start"],
+                current_period["end"],
+                section_state["content"],
+            )
         alias = snapshot_alias(base_alias, date_str)
         section_state["latest_snapshot_alias"] = alias
         snapshot_payloads.append((label, alias, snapshot))
@@ -312,7 +467,7 @@ def main() -> None:
         results["test_mode"] = True
         save_rollup_state(state)
         (OUTPUT_DIR / "hedgedoc_publish.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
-        for label in ["articles", "grants", "tasks"]:
+        for label in ["articles", "grants", "tasks", "jobs"]:
             print(f"{label}: {results[f'{label}_url']}")
             archive_key = f"{label}_archive_url"
             if archive_key in results:
@@ -320,18 +475,24 @@ def main() -> None:
         return
 
     hdrs = auth_headers(hedgedoc, "text/markdown; charset=utf-8")
-    for label, alias, markdown in archive_payloads:
-        archive_url = publish_note(base_url, alias, markdown, hdrs)
-        results[f"{label}_archive_url"] = archive_url
-        print(f"{label} archive: {archive_url}")
+    try:
+        for label, alias, markdown in archive_payloads:
+            archive_url = publish_note(base_url, alias, markdown, hdrs)
+            results[f"{label}_archive_url"] = archive_url
+            print(f"{label} archive: {archive_url}")
 
-    for label, alias, markdown in snapshot_payloads:
-        url = publish_note(base_url, alias, markdown, hdrs)
-        section_state = ensure_section_state(state, label)
-        section_state["latest_snapshot_url"] = url
-        results[f"{label}_url"] = url
-        results[f"{label}_alias"] = alias
-        print(f"{label}: {url}")
+        for label, alias, markdown in snapshot_payloads:
+            url = publish_note(base_url, alias, markdown, hdrs)
+            section_state = ensure_section_state(state, label)
+            section_state["latest_snapshot_url"] = url
+            results[f"{label}_url"] = url
+            results[f"{label}_alias"] = alias
+            print(f"{label}: {url}")
+    except Exception as exc:
+        results["test_mode"] = False
+        results["error"] = str(exc)
+        (OUTPUT_DIR / "hedgedoc_publish.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
+        raise
 
     results["test_mode"] = False
     save_rollup_state(state)

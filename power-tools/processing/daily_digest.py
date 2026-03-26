@@ -18,12 +18,14 @@ def main() -> None:
     scored_grants = load_json(PROCESSING_DIR / "scored_grants.json", default={})
     todos = load_json(PROCESSING_DIR / "obsidian_todos.json", default={})
     publications = load_json(INGEST_DIR / "collaborator_publications.json", default={})
+    jobs = load_json(INGEST_DIR / "job_openings.json", default={})
     date_str = datetime.date.today().isoformat()
 
     relevant_articles = scored_articles.get("relevant_items", [])[:10]
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
     prioritized_todos = todos.get("items", [])[:20]
     collaborator_items = [item for item in publications.get("items", []) if not item.get("error")][:10]
+    open_jobs = jobs.get("items", [])
 
     lines = [f"# Daily Lab Digest - {date_str}", ""]
     lines.append("## Relevant Papers")
@@ -77,6 +79,16 @@ def main() -> None:
     else:
         lines.append("- No priority project tasks extracted from Obsidian notes.")
 
+    lines.append("")
+    lines.append("## Job Openings")
+    if open_jobs:
+        academic_count = len([item for item in open_jobs if item.get("category") == "academic"])
+        conservation_count = len([item for item in open_jobs if item.get("category") == "conservation"])
+        lines.append(f"- Conservation jobs captured: {conservation_count}")
+        lines.append(f"- Academic biodiversity/restoration jobs captured: {academic_count}")
+    else:
+        lines.append("- No job openings extracted from tagged job newsletters.")
+
     markdown = "\n".join(lines) + "\n"
     digest_payload = {
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -86,7 +98,8 @@ def main() -> None:
         "relevant_grants": relevant_grants,
         "prioritized_todos": prioritized_todos,
         "collaborator_publications": collaborator_items,
-        "schema_version": 2,
+        "open_jobs": open_jobs,
+        "schema_version": 3,
     }
     dump_json(OUTPUT_DIR / "daily_digest.json", digest_payload)
     (OUTPUT_DIR / "daily_digest.md").write_text(markdown, encoding="utf-8")

@@ -11,6 +11,7 @@ Pulls raw records from external systems into local JSON snapshots.
 - `ingest/rss_journals.py`
 - `ingest/grant_opportunities.py`
 - `ingest/research_news.py`
+- `ingest/job_openings.py`
 - `ingest/collaborator_publications.py`
 - `ingest/gmail_imap_bridge.py`
 
@@ -37,8 +38,9 @@ Publishes or formats processed artifacts for downstream systems.
 - `output/matrix_digest.py`
 - `output/podcast_script.py`
 
-The HedgeDoc publisher now keeps rolling two-month article, grant, and task lists.
+The HedgeDoc publisher now keeps rolling two-month article, grant, task, and jobs notes.
 Each run prepends a new dated section to the top of the current rollup, and when the two-month window changes it publishes the old rollup to an archive note before starting a fresh one.
+The jobs note renders a live open-positions board with two tables, one for broad conservation jobs and one for academic biodiversity restoration/conservation roles.
 
 ## Configs
 
@@ -67,6 +69,7 @@ email_ingest:
     - grants
     - journals
     - news
+    - jobs
   lookback_days: 14
   max_messages_per_label: 50
   unread_only: false
@@ -77,6 +80,7 @@ routing:
     grants: grant_opportunities
     journals: journal_articles
     news: news_items
+    jobs: job_openings
 ```
 
 ## Data
@@ -104,6 +108,7 @@ Sample scheduler definitions live in [`deploy/power-tools-nightly.cron`](/C:/Use
 Journal RSS ingest now records seen article keys in `power-tools/data/state/rss_seen_articles.json` so the same article is not surfaced repeatedly on subsequent real runs.
 The Gmail IMAP bridge writes routed raw email records to `power-tools/data/ingest/email_messages.json`, and journal/grant ingesters merge those into their existing JSON snapshots.
 The `research_news.py` ingester normalizes email-routed `news_items` messages into `power-tools/data/ingest/news_items.json`.
+The `job_openings.py` ingester normalizes email-routed `job_openings` messages into `power-tools/data/ingest/job_openings.json`.
 It also ingests RSS-based research news from `configs/news.yaml` and applies a transparent keyword filter before writing the combined snapshot.
 Email credentials are read from environment variables named in `configs/email_ingest.yaml`, for example `JUNKYARD_GMAIL_USERNAME` and `JUNKYARD_GMAIL_APP_PASSWORD`.
 Routing is label-driven: labels listed under `email_ingest.labels` are matched to downstream targets via `routing.email_label_map`.

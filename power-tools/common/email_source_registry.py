@@ -22,6 +22,11 @@ EMAIL_SOURCE_REGISTRY = {
         "target_aliases": {"news_items"},
         "parser_name": "news_items",
     },
+    "job_openings": {
+        "labels": {"jobs"},
+        "target_aliases": {"job_openings", "jobs"},
+        "parser_name": "job_openings",
+    },
 }
 
 

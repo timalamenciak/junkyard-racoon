@@ -81,6 +81,25 @@ def sample_items() -> list[dict]:
             "link": "https://example.org/news/indigenous-led-wetland-restoration",
             "tags": ["email", "news", "test-mode"],
         },
+        {
+            "source_type": "email_imap",
+            "route_name": "jobs",
+            "target": "job_openings",
+            "mailbox": "jobs",
+            "gmail_label": "jobs",
+            "message_id": "<sample-jobs@example.org>",
+            "message_key": "jobs::<sample-jobs@example.org>",
+            "imap_uid": "104",
+            "subject": "Jobs digest: restoration ecologist and biodiversity postdoc",
+            "from": "Jobs Digest <alerts@example.org>",
+            "published": now,
+            "summary": "Newsletter digest with conservation and academic biodiversity openings.",
+            "body_text": "Jobs digest with restoration ecology and biodiversity research openings.",
+            "body_html_text": "Jobs digest with restoration ecology and biodiversity research openings.",
+            "links": ["https://example.org/jobs/restoration-ecologist"],
+            "link": "https://example.org/jobs/restoration-ecologist",
+            "tags": ["email", "jobs", "test-mode"],
+        },
     ]
 def route_description(route: dict) -> str:
     label = str(route.get("gmail_label") or route.get("mailbox") or route.get("name") or "unknown").strip()
@@ -169,6 +188,7 @@ def main() -> None:
             {"name": "pivot", "gmail_label": "pivot", "target": "grant_opportunities"},
             {"name": "journals", "gmail_label": "journals", "target": "journal_articles"},
             {"name": "news", "gmail_label": "news", "target": "news_items"},
+            {"name": "jobs", "gmail_label": "jobs", "target": "job_openings"},
         ]
         for route in sample_routes:
             print(f"[gmail_imap_bridge] routing {route_description(route)}")

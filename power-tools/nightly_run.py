@@ -20,6 +20,7 @@ STEPS = [
     {"label": "ingest journals (rss + email merge)", "script": ROOT / "ingest" / "rss_journals.py"},
     {"label": "ingest grants (rss + email merge)", "script": ROOT / "ingest" / "grant_opportunities.py"},
     {"label": "ingest research news (rss + email merge)", "script": ROOT / "ingest" / "research_news.py"},
+    {"label": "ingest jobs (email merge)", "script": ROOT / "ingest" / "job_openings.py"},
     {"label": "score articles", "script": ROOT / "processing" / "score_articles.py"},
     {"label": "score grants", "script": ROOT / "processing" / "score_grants.py"},
     {"label": "extract obsidian todos", "script": ROOT / "processing" / "obsidian_todos.py"},

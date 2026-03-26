@@ -9,6 +9,7 @@ hedgedoc:
     articles: lab-journal-articles
     grants: lab-grant-opportunities
     tasks: lab-project-tasks
+    jobs: lab-open-positions
   # The publisher keeps a rolling two-month window locally, publishes a fresh
   # rolling snapshot on each run, and emits archive notes when the window rolls over.
 matrix:

@@ -32,13 +32,13 @@ def main() -> None:
     lines.append(f"High-fit grants: {len(grants)}")
     lines.append(f"Priority tasks: {len(todos)}")
 
-    if publish.get("articles_url") or publish.get("grants_url") or publish.get("tasks_url"):
+    if publish.get("articles_url") or publish.get("grants_url") or publish.get("tasks_url") or publish.get("jobs_url"):
         lines.append("")
         lines.append("HedgeDoc:")
-        for label, key in [("Articles", "articles_url"), ("Grants", "grants_url"), ("Tasks", "tasks_url")]:
+        for label, key in [("Articles", "articles_url"), ("Grants", "grants_url"), ("Tasks", "tasks_url"), ("Jobs", "jobs_url")]:
             if publish.get(key):
                 lines.append(f"  {label}: {publish[key]}")
-        archive_keys = [("Articles archive", "articles_archive_url"), ("Grants archive", "grants_archive_url"), ("Tasks archive", "tasks_archive_url")]
+        archive_keys = [("Articles archive", "articles_archive_url"), ("Grants archive", "grants_archive_url"), ("Tasks archive", "tasks_archive_url"), ("Jobs archive", "jobs_archive_url")]
         for label, key in archive_keys:
             if publish.get(key):
                 lines.append(f"  {label}: {publish[key]}")

@@ -17,6 +17,7 @@ def test_parser_name_for_route_uses_label_first_routing() -> None:
     assert gmail_imap_bridge.parser_name_for_route({"gmail_label": "grants", "target": "grant_opportunities"}) == "grant_opportunities"
     assert gmail_imap_bridge.parser_name_for_route({"gmail_label": "journals", "target": "journal_articles"}) == "journal_articles"
     assert gmail_imap_bridge.parser_name_for_route({"gmail_label": "news", "target": "news_items"}) == "news_items"
+    assert gmail_imap_bridge.parser_name_for_route({"gmail_label": "jobs", "target": "job_openings"}) == "job_openings"
     assert gmail_imap_bridge.parser_name_for_route({"gmail_label": "misc", "target": "unknown"}) == "fallback_skip"
 
 

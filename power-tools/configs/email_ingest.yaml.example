@@ -12,6 +12,7 @@ email_ingest:
     - grants
     - journals
     - news
+    - jobs
   lookback_days: 14
   max_messages_per_label: 50
   unread_only: false
@@ -22,3 +23,4 @@ routing:
     grants: grant_opportunities
     journals: journal_articles
     news: news_items
+    jobs: job_openings
