@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract tasks from Obsidian project files and prioritize them with the LLM."""
+"""Extract tasks from Obsidian project files and identify high-impact ones with the LLM."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from common.runtime import is_test_mode
 
 
 MAX_NOTE_CHARS = 6000
-BATCH_SIZE = 10
 
 
 def sample_items() -> list[dict]:
@@ -79,63 +78,58 @@ def discover_project_notes(vault_paths: list[Path], project_globs: list[str]) ->
     return note_payloads
 
 
-def extract_tasks_from_notes(source_notes: list[dict], extraction_rules: list[str]) -> list[dict]:
-    extracted_items: list[dict] = []
+def extract_tasks_from_note(note: dict, extraction_rules: list[str]) -> list[dict]:
+    """Send a single project note to the LLM and identify the next 3-5 tasks."""
+    rules_block = "\n".join(f"- {r}" for r in extraction_rules)
     system = (
-        "You are reviewing Obsidian project files for a research lab.\n"
-        "Read each project file and convert it into a list of concrete next tasks.\n"
-        "Return only JSON as a list of objects with keys: index, tasks.\n"
-        "Each tasks value must be a list of objects with keys: task, owner_guess, deadline_guess, rationale.\n"
-        "Only include concrete, actionable tasks."
+        "You are reviewing an Obsidian project file for a research lab.\n"
+        "Identify the next 3-5 concrete, actionable tasks for this project.\n"
+        "Return only JSON as a list of objects with keys: task, owner_guess, deadline_guess, rationale.\n"
+        "Limit to 5 tasks maximum. Only include concrete, actionable next steps."
     )
-    rules_block = "\n".join(f"- {item}" for item in extraction_rules)
-
-    for batch_start in range(0, len(source_notes), BATCH_SIZE):
-        batch_notes = source_notes[batch_start : batch_start + BATCH_SIZE]
-        batch_prompts = [
-            f"[{i}] Project file: {note['note']}\nProject: {note['project']}\nContent:\n{note['content']}"
-            for i, note in enumerate(batch_notes)
-        ]
-        user = f"Extraction rules:\n{rules_block}\n\nProject files:\n\n" + "\n\n".join(batch_prompts)
-        try:
-            response = chat_completion(
-                [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                max_tokens=3200,
-                temperature=0.0,
-            )
-            parsed = extract_json_payload(response)
-        except Exception as exc:
-            print(
-                f"Warning: LLM task extraction failed for files {batch_start}-{batch_start + len(batch_notes) - 1}: {exc}",
-                file=sys.stderr,
-            )
-            continue
-
-        for item in parsed:
-            local_idx = item.get("index")
-            if not (isinstance(local_idx, int) and 0 <= local_idx < len(batch_notes)):
+    user = (
+        f"Project: {note['project']}\n"
+        f"File: {note['note']}\n\n"
+        f"Extraction rules:\n{rules_block}\n\n"
+        f"Project file content:\n{note['content']}\n\n"
+        "Identify the next 3-5 tasks for this project."
+    )
+    try:
+        response = chat_completion(
+            [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            max_tokens=1200,
+            temperature=0.0,
+        )
+        parsed = extract_json_payload(response)
+        if not isinstance(parsed, list):
+            return []
+        items = []
+        for task in parsed:
+            task_text = str(task.get("task", "")).strip()
+            if not task_text:
                 continue
-            note = batch_notes[local_idx]
-            for task in item.get("tasks", []):
-                task_text = str(task.get("task", "")).strip()
-                if not task_text:
-                    continue
-                extracted_items.append(
-                    {
-                        "vault": note.get("vault", ""),
-                        "note": note.get("note", ""),
-                        "project": note.get("project", ""),
-                        "task": task_text,
-                        "owner_guess": str(task.get("owner_guess", "")).strip(),
-                        "deadline_guess": str(task.get("deadline_guess", "")).strip(),
-                        "rationale": str(task.get("rationale", "")).strip(),
-                    }
-                )
+            items.append(
+                {
+                    "vault": note.get("vault", ""),
+                    "note": note.get("note", ""),
+                    "project": note.get("project", ""),
+                    "task": task_text,
+                    "owner_guess": str(task.get("owner_guess", "")).strip(),
+                    "deadline_guess": str(task.get("deadline_guess", "")).strip(),
+                    "rationale": str(task.get("rationale", "")).strip(),
+                }
+            )
+        return items
+    except Exception as exc:
+        print(
+            f"Warning: task extraction failed for {note.get('note', '?')}: {exc}",
+            file=sys.stderr,
+        )
+        return []
 
-    return extracted_items
 
-
-def prioritize_tasks(extracted_items: list[dict]) -> list[dict]:
+def score_task_impact(extracted_items: list[dict]) -> list[dict]:
+    """Send all collected tasks back to the LLM and ask which are high impact."""
     if not extracted_items:
         return []
 
@@ -144,20 +138,21 @@ def prioritize_tasks(extracted_items: list[dict]) -> list[dict]:
         task_lines.append(
             f"[{idx}] Project: {item.get('project', '')}\n"
             f"Task: {item.get('task', '')}\n"
-            f"Owner guess: {item.get('owner_guess', '')}\n"
+            f"Owner: {item.get('owner_guess', '')}\n"
             f"Deadline cue: {item.get('deadline_guess', '')}\n"
-            f"Context: {item.get('rationale', '')}\n"
-            f"Source file: {item.get('note', '')}"
+            f"Context: {item.get('rationale', '')}"
         )
 
     system = (
-        "You are prioritizing a research lab task list.\n"
-        "Prioritize highest-impact, lowest-effort work first, while still promoting urgent deadline-driven items.\n"
+        "You are a research lab prioritization assistant.\n"
+        "Review this list of potential project tasks and identify which are high impact for the lab.\n"
+        "Prioritize highest-impact, lowest-effort work first; also promote urgent deadline-driven items.\n"
         "Return only JSON as a list of objects with keys: index, priority, impact, effort, rationale.\n"
-        "Priority must be urgent, high, medium, or low.\n"
-        "Impact and effort must be high, medium, or low."
+        "priority must be: urgent, high, medium, or low.\n"
+        "impact and effort must be: high, medium, or low."
     )
-    user = "Prioritize these extracted project tasks:\n\n" + "\n\n".join(task_lines)
+    user = "Which of these tasks are high impact?\n\n" + "\n\n".join(task_lines)
+
     response = chat_completion(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
         max_tokens=3200,
@@ -165,13 +160,13 @@ def prioritize_tasks(extracted_items: list[dict]) -> list[dict]:
     )
     parsed = extract_json_payload(response)
 
-    prioritized_items: list[dict] = []
+    prioritized: list[dict] = []
     for item in parsed:
         source_idx = item.get("index")
         if not (isinstance(source_idx, int) and 0 <= source_idx < len(extracted_items)):
             continue
         source = extracted_items[source_idx]
-        prioritized_items.append(
+        prioritized.append(
             {
                 **source,
                 "priority": item.get("priority", "medium"),
@@ -180,7 +175,7 @@ def prioritize_tasks(extracted_items: list[dict]) -> list[dict]:
                 "rationale": str(item.get("rationale", source.get("rationale", ""))).strip(),
             }
         )
-    return prioritized_items
+    return prioritized
 
 
 def main() -> None:
@@ -206,14 +201,35 @@ def main() -> None:
     note_payloads = discover_project_notes(vault_paths, project_globs)
     source_notes = [note for note in note_payloads if not note.get("error")]
 
+    if not source_notes:
+        dump_json(
+            PROCESSING_DIR / "obsidian_todos.json",
+            {
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "notes_scanned": 0,
+                "tasks_extracted": 0,
+                "items": [],
+            },
+        )
+        print("No project notes found to scan")
+        return
+
+    # Step 1: send each note individually to extract 3-5 tasks
+    extraction_rules = config.get("todo_extraction_rules", [])
     extracted_items: list[dict] = []
-    prioritized_items: list[dict] = []
-    if source_notes:
-        extracted_items = extract_tasks_from_notes(source_notes, config.get("todo_extraction_rules", []))
+    for note in source_notes:
+        tasks = extract_tasks_from_note(note, extraction_rules)
+        extracted_items.extend(tasks)
+        if tasks:
+            print(f"  {note['note']}: {len(tasks)} tasks extracted")
+
+    # Step 2: send all collected tasks back and ask which are high impact
+    prioritized_items: list[dict] = extracted_items
+    if extracted_items:
         try:
-            prioritized_items = prioritize_tasks(extracted_items)
+            prioritized_items = score_task_impact(extracted_items)
         except Exception as exc:
-            print(f"Warning: LLM task prioritization failed: {exc}", file=sys.stderr)
+            print(f"Warning: LLM impact scoring failed: {exc}", file=sys.stderr)
             prioritized_items = extracted_items
 
     dump_json(
@@ -226,7 +242,7 @@ def main() -> None:
         },
     )
     print(f"Extracted {len(extracted_items)} tasks from {len(source_notes)} project files")
-    print(f"Prioritized {len(prioritized_items)} tasks")
+    print(f"Scored {len(prioritized_items)} tasks by impact")
 
 
 if __name__ == "__main__":

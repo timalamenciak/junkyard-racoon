@@ -10,6 +10,43 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.io_utils import INGEST_DIR, OUTPUT_DIR, PROCESSING_DIR, dump_json, ensure_data_dirs, load_json
+from common.llm import chat_completion, extract_json_payload
+from common.runtime import is_test_mode
+
+
+def generate_mastodon_toots(digest_markdown: str) -> list[str]:
+    """Ask the LLM to generate 5 Mastodon toots from the daily digest."""
+    system = (
+        "You are the Junkyard Racoon — a scrappy, curious research lab mascot who actually reads the literature.\n"
+        "Your Mastodon account shares conservation science news, research finds, job tips, and grant alerts.\n"
+        "Tone: witty, nature-forward, genuinely informative. Not corporate. Not preachy.\n"
+        "Generate exactly 5 Mastodon toots based on the daily digest. Each toot must:\n"
+        "- Be under 500 characters (including hashtags)\n"
+        "- Be self-contained and interesting to the conservation science community\n"
+        "- Include 2-4 relevant hashtags\n"
+        "- Cover a distinct angle: new research, job/career tip, grant alert, news, or lab insight\n"
+        "Return only JSON as a list of exactly 5 strings."
+    )
+    user = f"Based on this daily digest, what are 5 Mastodon toots that the Junkyard Racoon account could toot?\n\n{digest_markdown[:4000]}"
+    response = chat_completion(
+        [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        max_tokens=1500,
+        temperature=0.6,
+    )
+    parsed = extract_json_payload(response)
+    if isinstance(parsed, list):
+        return [str(t).strip() for t in parsed if str(t).strip()][:5]
+    return []
+
+
+def sample_mastodon_toots() -> list[str]:
+    return [
+        "New in restoration ecology: participatory planning with AI decision-support agents is showing real promise for community-led projects. The future of restoration might be collaborative by design. 🌿 #RestorationEcology #ConservationScience #AI",
+        "Hiring alert for conservation folks: several field positions open this month with strong student fit. Check the Racoon Lab digest for the full list. 🦝 #ConservationJobs #Ecology #Fieldwork",
+        "Grant radar: a new biodiversity catalyst fund just opened with a close deadline. High fit for restoration + community engagement work. Worth a look. 💰 #GrantAlert #Biodiversity #ResearchFunding",
+        "Reading: a paper on knowledge co-production in human-dimensions of restoration scored 89% relevance this week. The lab is flagging it for journal club. 📚 #HumanDimensions #EcologyResearch",
+        "The Narwhal and Mongabay both dropped pieces this week on policy shifts affecting Great Lakes restoration. Worth reading alongside the science. 🏞️ #ConservationPolicy #GreatLakes #RestorationNews",
+    ]
 
 
 def main() -> None:
@@ -103,6 +140,25 @@ def main() -> None:
         lines.append("- No job openings extracted from tagged job newsletters.")
 
     markdown = "\n".join(lines) + "\n"
+
+    # Generate Mastodon toots from the full digest
+    if is_test_mode():
+        mastodon_toots = sample_mastodon_toots()
+    else:
+        try:
+            mastodon_toots = generate_mastodon_toots(markdown)
+        except Exception as exc:
+            print(f"Warning: Mastodon toot generation failed: {exc}", file=sys.stderr)
+            mastodon_toots = []
+
+    if mastodon_toots:
+        lines.append("")
+        lines.append("## Mastodon Toots")
+        for i, toot in enumerate(mastodon_toots, 1):
+            lines.append(f"\n### Toot {i}")
+            lines.append(toot)
+        markdown = "\n".join(lines) + "\n"
+
     digest_payload = {
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "date": date_str,
@@ -113,11 +169,14 @@ def main() -> None:
         "prioritized_todos": prioritized_todos,
         "collaborator_publications": collaborator_items,
         "open_jobs": open_jobs,
-        "schema_version": 4,
+        "mastodon_toots": mastodon_toots,
+        "schema_version": 5,
     }
     dump_json(OUTPUT_DIR / "daily_digest.json", digest_payload)
     (OUTPUT_DIR / "daily_digest.md").write_text(markdown, encoding="utf-8")
     print(f"Wrote digest to {OUTPUT_DIR / 'daily_digest.md'}")
+    if mastodon_toots:
+        print(f"Generated {len(mastodon_toots)} Mastodon toots")
 
 
 if __name__ == "__main__":

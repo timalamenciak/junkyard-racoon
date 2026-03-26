@@ -29,6 +29,7 @@ STEPS = [
     {"label": "publish hedgedoc", "script": ROOT / "output" / "publish_hedgedoc.py", "allow_failure": True},
     {"label": "publish static digest", "script": ROOT / "output" / "publish_static_digest.py"},
     {"label": "render matrix digest", "script": ROOT / "output" / "matrix_digest.py"},
+    {"label": "post matrix digest", "script": ROOT / "output" / "post_matrix_digest.py", "allow_failure": True},
     {"label": "generate podcast script", "script": ROOT / "output" / "podcast_script.py"},
 ]
 

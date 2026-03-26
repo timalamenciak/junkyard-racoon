@@ -121,6 +121,18 @@ def merge_jobs(existing: list[dict], incoming: list[dict], current_date: datetim
     return kept
 
 
+def collect_all_tags(jobs: list[dict]) -> list[str]:
+    seen: set[str] = set()
+    tags: list[str] = []
+    for job in jobs:
+        for tag in job.get("student_tags", []):
+            t = str(tag).strip().lower()
+            if t and t not in seen:
+                seen.add(t)
+                tags.append(t)
+    return sorted(tags)
+
+
 def render_item_list(items: list[dict], empty_text: str, score_key: str | None = None, action_key: str | None = None) -> str:
     if not items:
         return f"<p class='empty'>{_clean(empty_text)}</p>"
@@ -132,7 +144,7 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
         meta: list[str] = []
         if score_key and item.get(score_key) is not None:
             try:
-                meta.append(f"{int(float(item.get(score_key, 0)) * 100)}% match")
+                meta.append(f"<code>{int(float(item.get(score_key, 0)) * 100)}%</code>")
             except Exception:
                 pass
         if action_key and item.get(action_key):
@@ -143,7 +155,7 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
         else:
             parts.append(f"<span>{title}</span>")
         if meta:
-            parts.append(f"<div class='meta'>{' | '.join(meta)}</div>")
+            parts.append(f"<div class='meta'>{' &middot; '.join(meta)}</div>")
         if summary:
             parts.append(f"<p>{summary}</p>")
         parts.append("</li>")
@@ -151,9 +163,40 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
     return "".join(parts)
 
 
+def render_jobs_controls(all_tags: list[str]) -> str:
+    tag_chips = "".join(
+        f"<button class='tag-chip' data-tag='{html.escape(tag, quote=True)}'>{html.escape(tag)}</button>"
+        for tag in all_tags
+    )
+    return (
+        "<div class='jobs-controls'>"
+        "<div class='search-wrap'>"
+        "<span class='search-icon'>&#x2315;</span>"
+        "<input type='text' id='job-search' class='job-search' placeholder='Search jobs...' autocomplete='off'>"
+        "<button class='clear-search' id='clear-search' aria-label='Clear search'>&#x2715;</button>"
+        "</div>"
+        f"<div class='tag-filter-row' id='tag-filter-row'>"
+        "<button class='tag-chip active' data-tag='__all__'>All</button>"
+        f"{tag_chips}"
+        "</div>"
+        "<div class='jobs-count'><span id='jobs-visible-count'></span></div>"
+        "</div>"
+    )
+
+
 def render_jobs_table(items: list[dict]) -> str:
     rows = [
-        "<table class='jobs-table'><thead><tr><th>Title</th><th>Organization</th><th>Location</th><th>Rate of Pay</th><th>Posted Date</th><th>Deadline</th><th>Student Fit</th><th>Tags</th></tr></thead><tbody>"
+        "<table class='jobs-table' id='jobs-table'>"
+        "<thead><tr>"
+        "<th data-col='0'>Title <span class='sort-icon'></span></th>"
+        "<th data-col='1'>Organization <span class='sort-icon'></span></th>"
+        "<th data-col='2'>Location <span class='sort-icon'></span></th>"
+        "<th data-col='3'>Rate of Pay <span class='sort-icon'></span></th>"
+        "<th data-col='4'>Posted <span class='sort-icon'></span></th>"
+        "<th data-col='5'>Deadline <span class='sort-icon'></span></th>"
+        "<th data-col='6'>Student Fit <span class='sort-icon'></span></th>"
+        "<th data-col='7'>Tags</th>"
+        "</tr></thead><tbody>"
     ]
     if not items:
         rows.append("<tr><td colspan='8' class='empty-cell'>No open positions right now.</td></tr>")
@@ -177,19 +220,23 @@ def render_jobs_table(items: list[dict]) -> str:
         if score or fit_reason:
             fit_parts = []
             if score:
-                fit_parts.append(f"<strong>{html.escape(score)}</strong>")
+                fit_parts.append(f"<code class='score-badge'>{html.escape(score)}</code>")
             if fit_reason:
                 fit_parts.append(f"<span>{fit_reason}</span>")
             fit_cell = "".join(fit_parts)
         tags = [str(value).strip() for value in item.get("student_tags", []) if str(value).strip()]
-        tag_html = " ".join(f"<span class='job-tag'>{html.escape(tag)}</span>" for tag in tags[:5])
+        tag_html = " ".join(
+            f"<span class='job-tag' data-tag='{html.escape(tag.lower(), quote=True)}'>{html.escape(tag)}</span>"
+            for tag in tags[:6]
+        )
+        tags_search = " ".join(tags).lower()
         rows.append(
-            "<tr>"
+            f"<tr data-tags='{html.escape(tags_search, quote=True)}'>"
             f"<td data-label='Title'>{title}</td>"
             f"<td data-label='Organization' title='{html.escape(str(item.get('organization', '')), quote=True)}'>{_truncate_display(item.get('organization', ''), 42)}</td>"
             f"<td data-label='Location' title='{html.escape(str(item.get('location', '')), quote=True)}'>{_truncate_display(item.get('location', ''), 34)}</td>"
             f"<td data-label='Rate of Pay' title='{html.escape(str(item.get('pay', '')), quote=True)}'>{_truncate_display(item.get('pay', '') or item.get('pay_normalized', ''), 28)}</td>"
-            f"<td data-label='Posted Date'>{_truncate_display(item.get('posted_date', ''), 18)}</td>"
+            f"<td data-label='Posted'>{_truncate_display(item.get('posted_date', ''), 18)}</td>"
             f"<td data-label='Deadline' title='{html.escape(str(item.get('application_deadline', '')), quote=True)}'>{_truncate_display(item.get('application_deadline', ''), 26)}</td>"
             f"<td data-label='Student Fit' class='fit-cell'>{fit_cell}</td>"
             f"<td data-label='Tags' class='tags-cell'>{tag_html}</td>"
@@ -262,10 +309,238 @@ def render_digest_section(digest: dict) -> str:
     )
 
 
+_CSS = """
+  :root {
+    --bg:#ede6d8; --bg-deep:#d9cfbe; --panel:#fffaf0; --panel-strong:#f6eedf;
+    --ink:#211f1a; --muted:#655d52; --line:#d4c4aa;
+    --accent:#2d5c40; --accent-soft:#dce8df; --accent-glow:rgba(45,92,64,0.22);
+    --scrap:#7e5738; --night:#1a1f24; --sun:#d28f2c;
+    --mono:'JetBrains Mono','Fira Mono','Courier New',monospace;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Georgia,"Times New Roman",serif;background:radial-gradient(circle at top,rgba(210,143,44,0.14),transparent 22%),linear-gradient(180deg,#f5efe2 0%,var(--bg) 48%,var(--bg-deep) 100%);color:var(--ink);}
+  a{color:var(--accent);}
+  code{font-family:var(--mono);font-size:0.82em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.18);border-radius:5px;padding:1px 5px;color:var(--accent);}
+
+  /* ── Layout ── */
+  .layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
+  .sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:24px 20px;
+    background:linear-gradient(180deg,#181d21 0%,#222c33 55%,#2d5c40 100%);
+    color:#f4efe6;border-right:1px solid rgba(255,255,255,0.06);}
+  .sidebar a{color:#f6ead3;text-decoration:none;}
+  .sidebar a:hover{color:#a3e4b0;}
+  .sidebar ul{list-style:none;padding:0;margin:10px 0 0;}
+  .sidebar li{margin:0 0 8px;}
+  .sidebar .nav-caption{color:#8aab96;text-transform:uppercase;letter-spacing:0.12em;font-size:0.68rem;margin:24px 0 8px;font-family:var(--mono);}
+  .sidebar-brand{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:#5ec47a;margin-bottom:6px;}
+  .sidebar h1{margin:0 0 6px;font-size:1.4rem;color:#f4efe6;}
+  .sidebar-meta{font-size:0.8rem;color:#8aab96;font-family:var(--mono);}
+  .content{padding:36px;}
+
+  /* ── Cards ── */
+  .hero,.digest-card,.jobs-card{background:rgba(255,250,240,0.92);border:1px solid rgba(126,87,56,0.18);border-radius:var(--radius);padding:26px;box-shadow:0 18px 44px rgba(44,31,18,0.08);margin-bottom:24px;backdrop-filter:blur(10px);}
+  .hero{position:relative;overflow:hidden;padding:30px;background:linear-gradient(135deg,rgba(255,250,240,0.96),rgba(244,232,214,0.92));}
+  .hero:after{content:"";position:absolute;inset:auto -60px -70px auto;width:240px;height:240px;background:radial-gradient(circle,var(--accent-glow),transparent 65%);}
+  .hero-copy{max-width:700px;position:relative;z-index:1;}
+  .hero p,.meta,.empty{color:var(--muted);}
+  .brand-kicker{display:inline-block;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--scrap);margin-bottom:10px;font-family:var(--mono);}
+  .hero-shell{display:flex;gap:28px;align-items:center;justify-content:space-between;}
+  .hero h1{margin:0 0 10px;font-size:clamp(2rem,4vw,3rem);line-height:1.1;}
+  .hero-lede{font-size:1rem;max-width:58ch;}
+  .raccoon-badge{width:160px;min-width:160px;filter:drop-shadow(0 16px 22px rgba(33,31,26,0.18));}
+
+  /* ── Metric chips ── */
+  .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px;position:relative;z-index:1;}
+  .metric-chip{background:rgba(255,255,255,0.55);border:1px solid rgba(45,92,64,0.14);border-radius:14px;padding:14px 16px;}
+  .metric-chip span{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}
+  .metric-chip strong{display:block;margin-top:6px;font-size:1.5rem;color:var(--night);font-family:var(--mono);}
+
+  /* ── Section headings ── */
+  .jobs-card h2,.digest-card h2{margin-top:0;}
+  .section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .section-tag{padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:0.75rem;font-family:var(--mono);letter-spacing:0.06em;}
+
+  /* ── Jobs controls ── */
+  .jobs-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 14px;}
+  .search-wrap{position:relative;flex:1;min-width:200px;max-width:360px;}
+  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none;}
+  .job-search{width:100%;padding:9px 32px 9px 34px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:0.9rem;font-family:var(--mono);color:var(--ink);outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+  .job-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+  .clear-search{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;line-height:1;display:none;}
+  .clear-search.visible{display:block;}
+  .tag-filter-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag-chip{display:inline-block;padding:5px 11px;border-radius:999px;background:rgba(45,92,64,0.08);border:1px solid rgba(45,92,64,0.2);color:var(--accent);font-size:0.75rem;font-family:var(--mono);cursor:pointer;transition:background 0.15s,border-color 0.15s;line-height:1;}
+  .tag-chip:hover{background:rgba(45,92,64,0.16);}
+  .tag-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .jobs-count{font-size:0.78rem;font-family:var(--mono);color:var(--muted);align-self:center;}
+
+  /* ── Jobs table ── */
+  .jobs-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:16px;overflow:hidden;table-layout:fixed;}
+  .jobs-table th,.jobs-table td{border-bottom:1px solid rgba(126,87,56,0.15);padding:11px 13px;text-align:left;vertical-align:top;}
+  .jobs-table thead th{background:linear-gradient(180deg,#e0ead9,#d2e0d3);font-size:0.76rem;letter-spacing:0.08em;text-transform:uppercase;color:#2d5c40;font-family:var(--mono);cursor:pointer;user-select:none;white-space:nowrap;}
+  .jobs-table thead th:hover{background:linear-gradient(180deg,#d2e0d3,#c5d9c7);}
+  .jobs-table thead th .sort-icon{display:inline-block;width:12px;margin-left:4px;opacity:0.4;}
+  .jobs-table thead th.sort-asc .sort-icon::after{content:'▲';}
+  .jobs-table thead th.sort-desc .sort-icon::after{content:'▼';}
+  .jobs-table thead th.sort-asc .sort-icon,.jobs-table thead th.sort-desc .sort-icon{opacity:1;color:var(--accent);}
+  .jobs-table tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.48);}
+  .jobs-table tbody tr:nth-child(even) td{background:rgba(246,238,223,0.72);}
+  .jobs-table tbody tr:hover td{background:rgba(45,92,64,0.07);}
+  .jobs-table tbody tr.hidden{display:none;}
+  .jobs-table td{overflow-wrap:anywhere;}
+  .score-badge{font-family:var(--mono);font-size:0.8em;background:rgba(45,92,64,0.12);border:1px solid rgba(45,92,64,0.22);border-radius:5px;padding:2px 6px;color:var(--accent);}
+  .fit-cell .score-badge{display:block;margin-bottom:4px;}
+  .fit-cell span{display:block;margin-top:2px;color:var(--muted);font-size:0.88rem;}
+  .tags-cell{min-width:160px;}
+  .job-tag{display:inline-block;margin:0 4px 4px 0;padding:3px 8px;border-radius:999px;background:rgba(45,92,64,0.1);color:var(--accent);font-size:0.72rem;font-family:var(--mono);line-height:1;border:1px solid rgba(45,92,64,0.15);}
+  .empty-cell{color:var(--muted);text-align:center;padding:24px;}
+
+  /* ── Digest grid ── */
+  .digest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:16px;}
+  .column-card{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:16px;padding:16px;}
+  .column-card h3{margin:0 0 14px;font-size:1rem;}
+  .item-list{list-style:none;padding:0;margin:0;}
+  .item-list li{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);}
+  .item-list li:last-child{margin-bottom:0;border-bottom:none;padding-bottom:0;}
+  .item-list a,.jobs-table a{font-weight:700;text-decoration:none;}
+  .item-list a:hover,.jobs-table a:hover{text-decoration:underline;}
+  .item-list p{margin:8px 0 0;color:var(--muted);font-size:0.93rem;}
+
+  /* ── Responsive ── */
+  @media(max-width:1120px){
+    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .hero-shell{flex-direction:column;align-items:flex-start;}
+    .raccoon-badge{width:120px;min-width:120px;}
+  }
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;}
+    .digest-grid{grid-template-columns:1fr;}
+    .content{padding:16px;}
+    .metrics{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:760px){
+    .metrics{grid-template-columns:1fr;}
+    .jobs-controls{flex-direction:column;align-items:stretch;}
+    .search-wrap{max-width:100%;}
+    .jobs-table,.jobs-table thead,.jobs-table tbody,.jobs-table th,.jobs-table td,.jobs-table tr{display:block;width:100%;}
+    .jobs-table thead{display:none;}
+    .jobs-table tbody tr{margin-bottom:14px;border:1px solid rgba(126,87,56,0.18);border-radius:14px;overflow:hidden;}
+    .jobs-table tbody tr.hidden{display:none;}
+    .jobs-table td{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:10px 12px;}
+    .jobs-table td::before{content:attr(data-label);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}
+  }
+"""
+
+_JS = """
+(function() {
+  var table = document.getElementById('jobs-table');
+  if (!table) return;
+  var tbody = table.querySelector('tbody');
+  var searchInput = document.getElementById('job-search');
+  var clearBtn = document.getElementById('clear-search');
+  var countEl = document.getElementById('jobs-visible-count');
+  var tagRow = document.getElementById('tag-filter-row');
+  var activeTag = '__all__';
+  var sortCol = -1, sortDir = 1;
+
+  function updateCount() {
+    var rows = tbody.querySelectorAll('tr:not(.hidden)');
+    var total = tbody.querySelectorAll('tr').length;
+    if (countEl) {
+      countEl.textContent = rows.length === total
+        ? total + ' positions'
+        : rows.length + ' of ' + total + ' positions';
+    }
+  }
+
+  function filterRows() {
+    var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    var rows = tbody.querySelectorAll('tr');
+    rows.forEach(function(row) {
+      var text = row.textContent.toLowerCase();
+      var rowTags = (row.dataset.tags || '').toLowerCase();
+      var matchSearch = !query || text.includes(query);
+      var matchTag = activeTag === '__all__' || rowTags.includes(activeTag.toLowerCase());
+      row.classList.toggle('hidden', !(matchSearch && matchTag));
+    });
+    updateCount();
+  }
+
+  function sortTable(col) {
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    if (!rows.length) return;
+    if (sortCol === col) { sortDir *= -1; }
+    else { sortCol = col; sortDir = 1; }
+
+    rows.sort(function(a, b) {
+      var aCells = a.querySelectorAll('td');
+      var bCells = b.querySelectorAll('td');
+      var aText = aCells[col] ? aCells[col].textContent.trim() : '';
+      var bText = bCells[col] ? bCells[col].textContent.trim() : '';
+      // Try numeric comparison for score/date-like columns
+      var aNum = parseFloat(aText), bNum = parseFloat(bText);
+      if (!isNaN(aNum) && !isNaN(bNum)) return sortDir * (aNum - bNum);
+      return sortDir * aText.localeCompare(bText, undefined, {numeric: true});
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+
+    // Update header indicators
+    table.querySelectorAll('thead th').forEach(function(th, i) {
+      th.classList.remove('sort-asc', 'sort-desc');
+      if (parseInt(th.dataset.col, 10) === col) {
+        th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+      }
+    });
+  }
+
+  // Wire up sort on headers
+  table.querySelectorAll('thead th[data-col]').forEach(function(th) {
+    th.addEventListener('click', function() {
+      sortTable(parseInt(th.dataset.col, 10));
+    });
+  });
+
+  // Wire up search
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      clearBtn && clearBtn.classList.toggle('visible', !!searchInput.value);
+      filterRows();
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      clearBtn.classList.remove('visible');
+      filterRows();
+    });
+  }
+
+  // Wire up tag filters
+  if (tagRow) {
+    tagRow.addEventListener('click', function(e) {
+      var chip = e.target.closest('[data-tag]');
+      if (!chip) return;
+      activeTag = chip.dataset.tag;
+      tagRow.querySelectorAll('.tag-chip').forEach(function(c) {
+        c.classList.toggle('active', c === chip);
+      });
+      filterRows();
+    });
+  }
+
+  updateCount();
+})();
+"""
+
+
 def render_index(state: dict, public_url: str) -> str:
     digests = state.get("digests", [])
     jobs = state.get("jobs", [])
     latest_date = _clean(digests[0]["date"]) if digests else "unknown"
+    all_tags = collect_all_tags(jobs)
+
     sidebar_links = ["<li><a href='#jobs'>Open Jobs</a></li>"]
     for digest in digests:
         date_str = _clean(digest.get("date", "unknown"))
@@ -274,79 +549,21 @@ def render_index(state: dict, public_url: str) -> str:
     for digest in digests:
         date_str = _clean(digest.get("date", "unknown"))
         archive_links.append(f"<li><a href='{date_str}.html'>{date_str}</a></li>")
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest</title>
-  <style>
-    :root {{ --bg:#ede6d8; --bg-deep:#d9cfbe; --panel:#fffaf0; --panel-strong:#f6eedf; --ink:#211f1a; --muted:#655d52; --line:#d4c4aa; --accent:#355f47; --accent-soft:#dce8df; --scrap:#7e5738; --night:#20252b; --sun:#d28f2c; }}
-    * {{ box-sizing:border-box; }}
-    body {{ margin:0; font-family:Georgia, "Times New Roman", serif; background:radial-gradient(circle at top, rgba(210,143,44,0.18), transparent 22%), linear-gradient(180deg, #f5efe2 0%, var(--bg) 48%, var(--bg-deep) 100%); color:var(--ink); }}
-    a {{ color:var(--accent); }}
-    .layout {{ display:grid; grid-template-columns:300px 1fr; min-height:100vh; }}
-    .sidebar {{ position:sticky; top:0; align-self:start; height:100vh; overflow:auto; padding:28px; background:linear-gradient(180deg, #1f2529 0%, #29353c 55%, #355f47 100%); color:#f4efe6; border-right:1px solid rgba(255,255,255,0.08); }}
-    .sidebar a {{ color:#f6ead3; text-decoration:none; }}
-    .sidebar ul {{ list-style:none; padding:0; margin:12px 0 0; }}
-    .sidebar li {{ margin:0 0 10px; }}
-    .sidebar .nav-caption {{ color:#d6cab7; text-transform:uppercase; letter-spacing:0.12em; font-size:0.72rem; margin:28px 0 10px; }}
-    .content {{ padding:36px; }}
-    .hero, .digest-card, .jobs-card {{ background:rgba(255,250,240,0.92); border:1px solid rgba(126,87,56,0.18); border-radius:26px; padding:26px; box-shadow:0 18px 44px rgba(44,31,18,0.08); margin-bottom:24px; backdrop-filter:blur(10px); }}
-    .hero {{ position:relative; overflow:hidden; padding:30px; background:linear-gradient(135deg, rgba(255,250,240,0.96), rgba(244,232,214,0.92)); }}
-    .hero:after {{ content:""; position:absolute; inset:auto -60px -70px auto; width:240px; height:240px; background:radial-gradient(circle, rgba(53,95,71,0.22), transparent 65%); }}
-    .hero-copy {{ max-width:700px; position:relative; z-index:1; }}
-    .hero p, .meta, .empty {{ color:var(--muted); }}
-    .brand-kicker {{ display:inline-block; font-size:0.78rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--scrap); margin-bottom:10px; }}
-    .hero-shell {{ display:flex; gap:28px; align-items:center; justify-content:space-between; }}
-    .hero h1 {{ margin:0 0 10px; font-size:clamp(2rem, 4vw, 3.2rem); line-height:1; }}
-    .hero-lede {{ font-size:1.05rem; max-width:58ch; }}
-    .raccoon-badge {{ width:170px; min-width:170px; filter:drop-shadow(0 16px 22px rgba(33,31,26,0.18)); }}
-    .metrics {{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; margin-top:22px; position:relative; z-index:1; }}
-    .metric-chip {{ background:rgba(255,255,255,0.55); border:1px solid rgba(53,95,71,0.14); border-radius:18px; padding:14px 16px; }}
-    .metric-chip span {{ display:block; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }}
-    .metric-chip strong {{ display:block; margin-top:6px; font-size:1.5rem; color:var(--night); }}
-    .jobs-card h2, .digest-card h2 {{ margin-top:0; }}
-    .section-heading {{ display:flex; align-items:center; justify-content:space-between; gap:14px; }}
-    .section-tag {{ padding:6px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:0.8rem; }}
-    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; border-radius:18px; overflow:hidden; table-layout:fixed; }}
-    .jobs-table th, .jobs-table td {{ border-bottom:1px solid rgba(126,87,56,0.15); padding:12px 14px; text-align:left; vertical-align:top; }}
-    .jobs-table thead th {{ background:linear-gradient(180deg, #e4eadf, #d6e2d9); font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#325742; }}
-    .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.48); }}
-    .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.72); }}
-    .jobs-table td {{ overflow-wrap:anywhere; }}
-    .fit-cell strong {{ display:block; color:var(--night); }}
-    .fit-cell span {{ display:block; margin-top:4px; color:var(--muted); font-size:0.92rem; }}
-    .tags-cell {{ min-width:180px; }}
-    .job-tag {{ display:inline-block; margin:0 6px 6px 0; padding:5px 9px; border-radius:999px; background:rgba(53,95,71,0.12); color:var(--accent); font-size:0.78rem; line-height:1; }}
-    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; margin-top:16px; }}
-    .column-card {{ background:var(--panel-strong); border:1px solid rgba(126,87,56,0.12); border-radius:18px; padding:16px; }}
-    .column-card h3 {{ margin:0 0 14px; }}
-    .item-list {{ list-style:none; padding:0; margin:0; }}
-    .item-list li {{ padding:0 0 14px; margin:0 0 14px; border-bottom:1px solid var(--line); }}
-    .item-list li:last-child {{ margin-bottom:0; border-bottom:none; padding-bottom:0; }}
-    .item-list a, .jobs-table a {{ font-weight:700; text-decoration:none; }}
-    .item-list a:hover, .jobs-table a:hover {{ text-decoration:underline; }}
-    .item-list p {{ margin:8px 0 0; color:var(--muted); font-size:0.96rem; }}
-    .empty-cell {{ color:var(--muted); text-align:center; }}
-    @media (max-width: 1120px) {{ .metrics {{ grid-template-columns:repeat(2, minmax(0, 1fr)); }} .hero-shell {{ flex-direction:column; align-items:flex-start; }} .raccoon-badge {{ width:132px; min-width:132px; }} }}
-    @media (max-width: 980px) {{ .layout {{ grid-template-columns:1fr; }} .sidebar {{ position:relative; height:auto; }} .digest-grid {{ grid-template-columns:1fr; }} .content {{ padding:18px; }} .metrics {{ grid-template-columns:1fr 1fr; }} }}
-    @media (max-width: 760px) {{
-      .metrics {{ grid-template-columns:1fr; }}
-      .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr {{ display:block; width:100%; }}
-      .jobs-table thead {{ display:none; }}
-      .jobs-table tbody tr {{ margin-bottom:14px; border:1px solid rgba(126,87,56,0.15); border-radius:16px; overflow:hidden; }}
-      .jobs-table td {{ display:grid; grid-template-columns:120px 1fr; gap:10px; padding:10px 12px; }}
-      .jobs-table td::before {{ content:attr(data-label); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }}
-    }}
-  </style>
+  <style>{_CSS}</style>
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <div class="brand-kicker">Junkyard Racoon</div>
+      <div class="sidebar-brand">Junkyard Racoon</div>
       <h1>Lab Digest</h1>
-      <p>Latest salvage run: {latest_date}</p>
+      <p class="sidebar-meta">Last run: {latest_date}</p>
       <div class="nav-caption">Jump To</div>
       <ul>{''.join(sidebar_links)}</ul>
       <div class="nav-caption">Daily Pages</div>
@@ -358,7 +575,7 @@ def render_index(state: dict, public_url: str) -> str:
           <div class="hero-copy">
             <div class="brand-kicker">Field Notes, Salvaged Nightly</div>
             <h1>Daily Research Digest</h1>
-            <p class="hero-lede">A cleaner front door for the lab: rolling intelligence on news, articles, grants, and one continuously updated jobs table that stays useful between runs.</p>
+            <p class="hero-lede">Rolling intelligence on news, articles, grants, and a continuously updated jobs board. Filtered for relevance. Built for the Racoon Lab.</p>
             <p>Public URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
           </div>
           {render_raccoon_badge()}
@@ -366,13 +583,18 @@ def render_index(state: dict, public_url: str) -> str:
         <div class="metrics">{render_metric_chips(digests, jobs)}</div>
       </section>
       <section id="jobs" class="jobs-card">
-        <h2>Open Jobs</h2>
-        <p class="meta">Continuously updated from the jobs-tagged newsletter flow. This table is the persistent board; daily digest entries below cover news, grants, and articles.</p>
+        <div class="section-heading">
+          <h2>Open Jobs</h2>
+          <span class="section-tag">live board</span>
+        </div>
+        <p class="meta">Continuously updated from the jobs-tagged newsletter flow. Filter and sort to find the right fit.</p>
+        {render_jobs_controls(all_tags)}
         {render_jobs_table(jobs)}
       </section>
       {''.join(render_digest_section(digest) for digest in digests)}
     </main>
   </div>
+  <script>{_JS}</script>
 </body>
 </html>
 """
@@ -380,6 +602,7 @@ def render_index(state: dict, public_url: str) -> str:
 
 def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     digest_date = _clean(digest.get("date", "unknown"))
+    all_tags = collect_all_tags(jobs)
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -387,46 +610,81 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest {digest_date}</title>
   <style>
-    body {{ max-width:1180px; margin:0 auto; padding:28px; font-family:Georgia, "Times New Roman", serif; background:linear-gradient(180deg, #f7f1e4 0%, #e9dfcc 100%); color:#1f2a1f; }}
-    .panel {{ background:#fffaf0; border:1px solid #d4c4aa; border-radius:22px; padding:24px; margin-bottom:20px; box-shadow:0 18px 40px rgba(44,31,18,0.08); }}
-    .digest-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; margin-top:14px; }}
-    .column-card {{ background:#f6eedf; border:1px solid rgba(126,87,56,0.12); border-radius:18px; padding:16px; }}
-    .item-list {{ list-style:none; padding:0; margin:0; }}
-    .item-list li {{ padding:0 0 14px; margin:0 0 14px; border-bottom:1px solid #d8d2c5; }}
-    .item-list li:last-child {{ border-bottom:none; margin-bottom:0; padding-bottom:0; }}
-    .jobs-table {{ width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }}
-    .jobs-table th, .jobs-table td {{ border-bottom:1px solid #d8d2c5; padding:10px 12px; text-align:left; vertical-align:top; }}
-    .jobs-table thead th {{ background:#dce8df; text-transform:uppercase; letter-spacing:0.08em; font-size:0.82rem; color:#355f47; }}
-    .jobs-table tbody tr:nth-child(odd) td {{ background:rgba(255,255,255,0.45); }}
-    .jobs-table tbody tr:nth-child(even) td {{ background:rgba(246,238,223,0.75); }}
-    .jobs-table td {{ overflow-wrap:anywhere; }}
-    .fit-cell strong {{ display:block; color:#20252b; }}
-    .fit-cell span {{ display:block; margin-top:4px; color:#655d52; font-size:0.92rem; }}
-    .job-tag {{ display:inline-block; margin:0 6px 6px 0; padding:5px 9px; border-radius:999px; background:rgba(53,95,71,0.12); color:#355f47; font-size:0.78rem; line-height:1; }}
-    .item-list a, .jobs-table a {{ color:#355f47; font-weight:700; text-decoration:none; }}
-    .item-list a:hover, .jobs-table a:hover {{ text-decoration:underline; }}
-    @media (max-width:980px) {{ .digest-grid {{ grid-template-columns:1fr; }} }}
-    @media (max-width:760px) {{
-      .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr {{ display:block; width:100%; }}
-      .jobs-table thead {{ display:none; }}
-      .jobs-table tbody tr {{ margin-bottom:14px; border:1px solid rgba(126,87,56,0.15); border-radius:16px; overflow:hidden; }}
-      .jobs-table td {{ display:grid; grid-template-columns:120px 1fr; gap:10px; padding:10px 12px; }}
-      .jobs-table td::before {{ content:attr(data-label); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:#655d52; }}
+    :root{{--accent:#2d5c40;--accent-soft:#dce8df;--accent-glow:rgba(45,92,64,0.2);--muted:#655d52;--line:#d8d2c5;--ink:#1f2a1f;--mono:'JetBrains Mono','Fira Mono','Courier New',monospace;}}
+    *{{box-sizing:border-box;}}
+    body{{max-width:1200px;margin:0 auto;padding:24px;font-family:Georgia,"Times New Roman",serif;background:linear-gradient(180deg,#f7f1e4 0%,#e9dfcc 100%);color:var(--ink);}}
+    a{{color:var(--accent);}}
+    code{{font-family:var(--mono);font-size:0.82em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.18);border-radius:5px;padding:1px 5px;color:var(--accent);}}
+    .panel{{background:#fffaf0;border:1px solid #d4c4aa;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 18px 40px rgba(44,31,18,0.08);}}
+    .brand-kicker{{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#7e5738;}}
+    .digest-grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px;}}
+    .column-card{{background:#f6eedf;border:1px solid rgba(126,87,56,0.12);border-radius:16px;padding:16px;}}
+    .column-card h3{{margin:0 0 12px;font-size:1rem;}}
+    .item-list{{list-style:none;padding:0;margin:0;}}
+    .item-list li{{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);}}
+    .item-list li:last-child{{border-bottom:none;margin-bottom:0;padding-bottom:0;}}
+    .item-list a{{color:var(--accent);font-weight:700;text-decoration:none;}}
+    .item-list a:hover{{text-decoration:underline;}}
+    .item-list p{{margin:6px 0 0;color:var(--muted);font-size:0.92rem;}}
+    .meta{{color:var(--muted);font-size:0.9rem;}}
+    .section-heading{{display:flex;align-items:center;justify-content:space-between;gap:12px;}}
+    .section-tag{{padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:0.74rem;font-family:var(--mono);}}
+    .jobs-controls{{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;}}
+    .search-wrap{{position:relative;flex:1;min-width:180px;max-width:340px;}}
+    .search-icon{{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none;}}
+    .job-search{{width:100%;padding:9px 32px 9px 34px;border:1px solid #d4c4aa;border-radius:999px;background:#fff;font-size:0.88rem;font-family:var(--mono);color:var(--ink);outline:none;transition:border-color 0.2s;}}
+    .job-search:focus{{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}}
+    .clear-search{{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;line-height:1;display:none;}}
+    .clear-search.visible{{display:block;}}
+    .tag-filter-row{{display:flex;flex-wrap:wrap;gap:6px;}}
+    .tag-chip{{display:inline-block;padding:5px 11px;border-radius:999px;background:rgba(45,92,64,0.08);border:1px solid rgba(45,92,64,0.2);color:var(--accent);font-size:0.74rem;font-family:var(--mono);cursor:pointer;transition:background 0.15s;line-height:1;}}
+    .tag-chip:hover{{background:rgba(45,92,64,0.16);}}
+    .tag-chip.active{{background:var(--accent);border-color:var(--accent);color:#fff;}}
+    .jobs-count{{font-size:0.76rem;font-family:var(--mono);color:var(--muted);align-self:center;}}
+    .jobs-table{{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border-radius:14px;overflow:hidden;}}
+    .jobs-table th,.jobs-table td{{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;}}
+    .jobs-table thead th{{background:#dce8df;text-transform:uppercase;letter-spacing:0.08em;font-size:0.74rem;color:var(--accent);font-family:var(--mono);cursor:pointer;user-select:none;white-space:nowrap;}}
+    .jobs-table thead th:hover{{background:#cddfd0;}}
+    .jobs-table thead th .sort-icon{{display:inline-block;width:12px;margin-left:4px;opacity:0.4;}}
+    .jobs-table thead th.sort-asc .sort-icon::after{{content:'▲';}}
+    .jobs-table thead th.sort-desc .sort-icon::after{{content:'▼';}}
+    .jobs-table thead th.sort-asc .sort-icon,.jobs-table thead th.sort-desc .sort-icon{{opacity:1;}}
+    .jobs-table tbody tr:nth-child(odd) td{{background:rgba(255,255,255,0.45);}}
+    .jobs-table tbody tr:nth-child(even) td{{background:rgba(246,238,223,0.75);}}
+    .jobs-table tbody tr:hover td{{background:rgba(45,92,64,0.07);}}
+    .jobs-table tbody tr.hidden{{display:none;}}
+    .jobs-table td{{overflow-wrap:anywhere;}}
+    .score-badge{{font-family:var(--mono);font-size:0.8em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.2);border-radius:4px;padding:2px 5px;color:var(--accent);display:block;margin-bottom:3px;}}
+    .fit-cell span{{display:block;color:var(--muted);font-size:0.88rem;}}
+    .job-tag{{display:inline-block;margin:0 4px 4px 0;padding:3px 8px;border-radius:999px;background:rgba(45,92,64,0.1);color:var(--accent);font-size:0.72rem;font-family:var(--mono);line-height:1;}}
+    .empty-cell{{color:var(--muted);text-align:center;padding:20px;}}
+    @media(max-width:980px){{.digest-grid{{grid-template-columns:1fr;}}}}
+    @media(max-width:760px){{
+      .jobs-controls{{flex-direction:column;align-items:stretch;}}
+      .search-wrap{{max-width:100%;}}
+      .jobs-table,.jobs-table thead,.jobs-table tbody,.jobs-table th,.jobs-table td,.jobs-table tr{{display:block;width:100%;}}
+      .jobs-table thead{{display:none;}}
+      .jobs-table tbody tr{{margin-bottom:12px;border:1px solid rgba(126,87,56,0.18);border-radius:12px;overflow:hidden;}}
+      .jobs-table tbody tr.hidden{{display:none;}}
+      .jobs-table td{{display:grid;grid-template-columns:100px 1fr;gap:8px;padding:9px 11px;}}
+      .jobs-table td::before{{content:attr(data-label);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}}
     }}
   </style>
 </head>
 <body>
   <div class="panel">
-    <p><a href="index.html">Back to digest index</a></p>
-    <div style="letter-spacing:.16em;text-transform:uppercase;color:#7e5738;font-size:.78rem;">Junkyard Racoon</div>
+    <p><a href="index.html">&larr; Back to digest index</a></p>
+    <div class="brand-kicker">Junkyard Racoon</div>
     <h1>Daily Digest {digest_date}</h1>
     <p>Base URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
   </div>
   <div class="panel">
-    <h2>Open Jobs</h2>
+    <div class="section-heading"><h2>Open Jobs</h2><span class="section-tag">live board</span></div>
+    {render_jobs_controls(all_tags)}
     {render_jobs_table(jobs)}
   </div>
   {render_digest_section(digest)}
+  <script>{_JS}</script>
 </body>
 </html>
 """
