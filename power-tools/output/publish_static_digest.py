@@ -16,6 +16,8 @@ from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, STATE_DIR, dump_json, ensur
 
 
 STATE_PATH = STATE_DIR / "static_digest_site.json"
+PODCAST_STATE_PATH = STATE_DIR / "podcast_state.json"
+PODCAST_SRC_DIR = OUTPUT_DIR / "podcast"
 
 MAX_HISTORY_DAYS = 60
 JOB_RETENTION_DAYS = 120
@@ -622,7 +624,21 @@ _JS = """
 """
 
 
-def render_index(state: dict, public_url: str) -> str:
+def render_podcast_sidebar(episode_count: int, feed_url: str) -> str:
+    if not feed_url:
+        return ""
+    ep_label = f"{episode_count} episode{'s' if episode_count != 1 else ''}" if episode_count else "No episodes yet"
+    return (
+        "<div class='nav-caption'>Podcast</div>"
+        "<ul>"
+        f"<li><a href='{html.escape(feed_url, quote=True)}'>Junkyard Racoon Radio</a></li>"
+        f"<li style='color:#8aab96;font-size:0.8rem;font-family:var(--mono)'>{html.escape(ep_label)}</li>"
+        "<li style='color:#8aab96;font-size:0.75rem;'>Add the RSS link to your podcast app</li>"
+        "</ul>"
+    )
+
+
+def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podcast_episode_count: int = 0) -> str:
     digests = state.get("digests", [])
     jobs = state.get("jobs", [])
     latest_date = _clean(digests[0]["date"]) if digests else "unknown"
@@ -656,6 +672,7 @@ def render_index(state: dict, public_url: str) -> str:
       <ul>{''.join(sidebar_links)}</ul>
       <div class="nav-caption">Daily Pages</div>
       <ul>{''.join(archive_links)}</ul>
+      {render_podcast_sidebar(podcast_episode_count, podcast_feed_url)}
     </aside>
     <main class="content">
       <section class="hero">
@@ -800,6 +817,8 @@ def publish_site(site_dir: Path, deploy_dir: Path | None) -> None:
         target = deploy_dir / path.name
         if path.is_file():
             shutil.copy2(path, target)
+        elif path.is_dir():
+            shutil.copytree(path, target, dirs_exist_ok=True)
 
 
 def main() -> None:
@@ -827,8 +846,24 @@ def main() -> None:
     state["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     save_state(state)
 
+    # Copy podcast files into the site (so they're served alongside the digest)
+    podcast_state = load_json(PODCAST_STATE_PATH, default={}) or {}
+    podcast_episode_count = int(podcast_state.get("episode_count", 0))
+    podcast_feed_url = ""
+    if PODCAST_SRC_DIR.exists():
+        podcast_site_dir = site_dir / "podcast"
+        podcast_site_dir.mkdir(parents=True, exist_ok=True)
+        for f in PODCAST_SRC_DIR.iterdir():
+            if f.is_file():
+                shutil.copy2(f, podcast_site_dir / f.name)
+        if (podcast_site_dir / "feed.xml").exists():
+            podcast_feed_url = public_url.rstrip("/") + "/podcast/feed.xml"
+
     site_dir.mkdir(parents=True, exist_ok=True)
-    (site_dir / "index.html").write_text(render_index(state, public_url), encoding="utf-8")
+    (site_dir / "index.html").write_text(
+        render_index(state, public_url, podcast_feed_url, podcast_episode_count),
+        encoding="utf-8",
+    )
     for item in state["digests"]:
         (site_dir / f"{item['date']}.html").write_text(
             render_daily_page(item, state["jobs"], public_url),

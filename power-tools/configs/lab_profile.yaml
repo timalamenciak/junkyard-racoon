@@ -43,5 +43,10 @@ obsidian_vault_paths:
 
 # Glob patterns for project files within each vault (relative to vault root).
 # Defaults to Projects/**/*.md if not set.
+# Glob patterns for project files within each vault (relative to vault root).
+# Run: find /your/vault/path -name "*.md" | head -30
+# to see your vault's folder structure, then narrow these patterns accordingly.
+# Using **/*.md scans every markdown file in the vault — fine to start with,
+# but consider narrowing to e.g. "Active Projects/**/*.md" once you know the layout.
 todo_project_globs:
-  - Projects/**/*.md
+  - "**/*.md"

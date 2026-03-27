@@ -23,3 +23,9 @@ matrix:
   summary_file: matrix_digest.txt
 podcast:
   script_file: podcast_script.md
+radio:
+  # Junkyard Racoon Radio — email-triggered podcast from PDF articles.
+  # Send an email from tim.alamenciak@gmail.com with "podcast" in the subject
+  # and a PDF attachment. A new numbered episode is generated each night.
+  # Requires ANTHROPIC_API_KEY and GEMINI_API_KEY in the environment.
+  enabled: true

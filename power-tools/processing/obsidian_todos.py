@@ -226,9 +226,11 @@ def main() -> None:
                 file=sys.stderr,
             )
 
+    print(f"  globs: {project_globs}")
     note_payloads = discover_project_notes(vault_paths, project_globs)
     source_notes = [note for note in note_payloads if not note.get("error")]
     missing_vaults = [note for note in note_payloads if note.get("error") == "missing_vault"]
+    print(f"  notes matched: {len(source_notes)}")
 
     if missing_vaults:
         print(

@@ -5,3 +5,9 @@ endpoint: http://your-llm-host/v1/chat/completions
 api_key: your-api-key-here
 model: your-model-name
 timeout: 900
+
+# API keys for the Junkyard Racoon Radio podcast pipeline.
+# podcast_gemini_tts_ver2.py uses Claude (Anthropic) for script generation
+# and Gemini TTS (Google) for audio synthesis.
+anthropic_api_key: your-anthropic-api-key-here
+gemini_api_key: your-gemini-api-key-here

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 STEPS = [
     {"label": "ingest collaborator publications", "script": ROOT / "ingest" / "collaborator_publications.py"},
     {"label": "ingest gmail email", "script": ROOT / "ingest" / "gmail_imap_bridge.py", "allow_failure": True},
+    {"label": "generate junkyard racoon radio episode", "script": ROOT / "ingest" / "podcast_email_ingest.py", "allow_failure": True},
     {"label": "ingest journals (rss + email merge)", "script": ROOT / "ingest" / "rss_journals.py"},
     {"label": "ingest grants (rss + email merge)", "script": ROOT / "ingest" / "grant_opportunities.py"},
     {"label": "ingest research news (rss + email merge)", "script": ROOT / "ingest" / "research_news.py"},
