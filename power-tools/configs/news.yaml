@@ -1,32 +1,108 @@
+# News ingestion configuration
+#
+# Geographic focus: Canada, with priority on Ontario and Waterloo Region.
+# The Record (Kitchener-Waterloo) and similar local sources arrive via the
+# email newsletter flow (jobs/news Gmail label) — add them in email_ingest.yaml.
+#
+# keyword scoring: items must score >= minimum_keyword_score to be surfaced.
+# Each keyword match scores +1. Boost terms (marked with *) score +2.
+
 lookback_days: 7
 max_items_per_feed: 40
 minimum_keyword_score: 1
 
 keywords:
-  - ecology
-  - restoration
-  - conservation
-  - biodiversity
-  - environmental assessment
-  - evidence synthesis
-  - ai for ecology
-  - knowledge graph
-  - knowledge graphs
-  - ontology
-  - ontologies
-  - canadian environmental policy
+  # ── Geographic anchors ────────────────────────────────────────────
   - canada
+  - canadian
+  - ontario
+  - waterloo region
+  - kitchener
+  - cambridge ontario
+  - grand river
+  - great lakes
+  - greenbelt
+  - niagara escarpment
+
+  # ── Ecology & conservation ────────────────────────────────────────
+  - biodiversity
+  - species at risk
+  - endangered species
+  - sara                       # Species at Risk Act
+  - habitat loss
+  - habitat restoration
+  - ecological restoration
+  - restoration ecology
+  - rewilding
+  - invasive species
+  - native species
+  - ecosystem services
+  - wetland
+  - grassland
+  - tallgrass prairie
+  - pollinator
+
+  # ── Policy & governance ───────────────────────────────────────────
+  - environment canada
+  - environment and climate change canada
+  - eccc
+  - conservation authority
+  - grca                       # Grand River Conservation Authority
+  - ontario ministry of environment
+  - land use planning
+  - conservation policy
+  - environmental assessment
   - impact assessment
+  - 30x30
+  - protected areas
+  - national park
+  - provincial park
+  - indigenous stewardship
+  - indigenous-led conservation
+
+  # ── Research & methods ────────────────────────────────────────────
+  - evidence synthesis
+  - systematic review
+  - knowledge mobilization
+  - citizen science
+  - community-based conservation
+  - ai for ecology
+  - remote sensing ecology
 
 feeds:
-  - name: Mongabay Conservation News
-    url: https://news.mongabay.com/feed/
-    tags: [news, conservation]
-
-  - name: The Narwhal Environment
+  # ── Canadian national ──────────────────────────────────────────────
+  - name: The Narwhal
     url: https://thenarwhal.ca/category/environment/feed/
     tags: [news, canada, policy]
 
-  - name: Nature News
-    url: https://www.nature.com/nature.rss
-    tags: [news, science]
+  - name: National Observer – Environment
+    url: https://www.nationalobserver.com/rss.xml
+    tags: [news, canada, climate, policy]
+
+  - name: CBC – Environment & Nature
+    url: https://www.cbc.ca/cmlink/rss-environment
+    tags: [news, canada, environment]
+
+  - name: Policy Options (IRPP)
+    url: https://policyoptions.irpp.org/feed/
+    tags: [news, canada, policy]
+
+  # ── Ontario & regional ─────────────────────────────────────────────
+  - name: Environmental Commissioner of Ontario (archived feed)
+    url: https://eco.on.ca/feed/
+    tags: [news, ontario, policy]
+    # Note: ECO publishes reports; feed may be infrequent.
+
+  - name: Ontario Nature
+    url: https://ontarionature.org/feed/
+    tags: [news, ontario, conservation]
+
+  # ── Science with Canadian relevance ────────────────────────────────
+  - name: Canadian Science Publishing – FACETS
+    url: https://www.facetsjournal.com/action/showFeed?type=etoc&feed=rss&jc=facets
+    tags: [science, canada, ecology]
+    # FACETS is Canada's open-access multidisciplinary science journal.
+
+  - name: Society for Conservation Biology – News
+    url: https://conbio.org/news/feed/
+    tags: [news, conservation, science]

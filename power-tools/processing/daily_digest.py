@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import re
 import sys
 from pathlib import Path
 
@@ -14,8 +15,18 @@ from common.llm import chat_completion, extract_json_payload
 from common.runtime import is_test_mode
 
 
+def _strip_html(text: str) -> str:
+    """Strip HTML tags and decode common entities from a string."""
+    text = re.sub(r"<[^>]+>", " ", text)
+    entities = {"&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&nbsp;": " ", "&#x2F;": "/"}
+    for entity, char in entities.items():
+        text = text.replace(entity, char)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
+
 def generate_mastodon_toots(digest_markdown: str) -> list[str]:
     """Ask the LLM to generate 5 Mastodon toots from the daily digest."""
+    clean_digest = _strip_html(digest_markdown)
     system = (
         "You are the Junkyard Racoon — a scrappy, curious research lab mascot who actually reads the literature.\n"
         "Your Mastodon account shares conservation science news, research finds, job tips, and grant alerts.\n"
@@ -25,9 +36,11 @@ def generate_mastodon_toots(digest_markdown: str) -> list[str]:
         "- Be self-contained and interesting to the conservation science community\n"
         "- Include 2-4 relevant hashtags\n"
         "- Cover a distinct angle: new research, job/career tip, grant alert, news, or lab insight\n"
-        "Return only JSON as a list of exactly 5 strings."
+        "- Use plain text only — no HTML tags, no Markdown links, no angle brackets\n"
+        "- Where you reference a specific article or source, include its plain URL on its own line\n"
+        "Return only JSON as a list of exactly 5 plain-text strings."
     )
-    user = f"Based on this daily digest, what are 5 Mastodon toots that the Junkyard Racoon account could toot?\n\n{digest_markdown[:4000]}"
+    user = f"Based on this daily digest, what are 5 Mastodon toots that the Junkyard Racoon account could toot?\n\n{clean_digest[:4000]}"
     response = chat_completion(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
         max_tokens=1500,
