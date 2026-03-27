@@ -1,3 +1,5 @@
+# Copy this file to lab_profile.yaml and fill in real values.
+# lab_profile.yaml is gitignored — never commit the real file.
 lab_name: Racoon Lab
 institution: Wilfrid Laurier University
 principal_investigator: Tim Alamenciak
@@ -29,6 +31,7 @@ todo_extraction_rules:
   - Prefer concrete actions over vague ideas.
   - Include likely owner guesses only when there is clear textual evidence.
   - Mark tasks as urgent when the note implies immediate action, a deadline, or blocking dependency.
+
 # obsidian_vault_paths: paths must be accessible FROM THE MACHINE RUNNING THE PIPELINE.
 # On the Ubuntu server (racoon-services) this must be a Linux path, e.g.:
 #   /home/ubuntu/obsidian-vault
@@ -38,12 +41,11 @@ todo_extraction_rules:
 # You can list multiple paths (e.g. one local Windows path + one server path);
 # the pipeline will use whichever ones actually exist on the current machine.
 obsidian_vault_paths:
-  - C:\Users\Tim\Obsidian\LabVault     # local Windows — works when running pipeline on your laptop
-  # - /home/ubuntu/obsidian-vault      # server path — uncomment after syncing vault with Syncthing/rsync
+  - C:\Users\YourName\Obsidian\YourVault   # local Windows — works when running pipeline on your laptop
+  # - /home/ubuntu/obsidian-vault           # server path — uncomment after syncing vault with Syncthing/rsync
 
 # Glob patterns for project files within each vault (relative to vault root).
 # Defaults to Projects/**/*.md if not set.
-# Glob patterns for project files within each vault (relative to vault root).
 # Run: find /your/vault/path -name "*.md" | head -30
 # to see your vault's folder structure, then narrow these patterns accordingly.
 # Using **/*.md scans every markdown file in the vault — fine to start with,

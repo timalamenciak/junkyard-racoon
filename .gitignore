@@ -15,10 +15,11 @@ matrix-bot-daemon.yaml
 power-tools/data/
 power-tools/**/*.log
 
-# Secret-bearing configs — copy from *.example and fill in real values
+# Secret-bearing configs — copy from *.yaml.example and fill in real values
 power-tools/configs/llm.yaml
 power-tools/configs/output.yaml
 power-tools/configs/email_ingest.yaml
+power-tools/configs/lab_profile.yaml
 
 .DS_Store
 Thumbs.db
