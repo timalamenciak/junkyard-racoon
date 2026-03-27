@@ -210,8 +210,32 @@ def main() -> None:
 
     vault_paths = [Path(path) for path in config.get("obsidian_vault_paths", [])]
     project_globs = list(config.get("todo_project_globs", ["Projects/**/*.md"]))
+
+    if not vault_paths:
+        print("WARNING [obsidian_todos] No obsidian_vault_paths configured in lab_profile.yaml", file=sys.stderr)
+
+    # Report existence of each configured vault before scanning
+    for vp in vault_paths:
+        if vp.exists():
+            print(f"  vault OK: {vp}")
+        else:
+            print(
+                f"  WARNING [obsidian_todos] vault NOT FOUND: {vp}\n"
+                f"    → On Linux/Ubuntu the vault must be synced to a local path.\n"
+                f"    → Update obsidian_vault_paths in configs/lab_profile.yaml to the server path.",
+                file=sys.stderr,
+            )
+
     note_payloads = discover_project_notes(vault_paths, project_globs)
     source_notes = [note for note in note_payloads if not note.get("error")]
+    missing_vaults = [note for note in note_payloads if note.get("error") == "missing_vault"]
+
+    if missing_vaults:
+        print(
+            f"WARNING [obsidian_todos] {len(missing_vaults)} vault(s) inaccessible — "
+            f"0 notes scanned from those vaults.",
+            file=sys.stderr,
+        )
 
     if not source_notes:
         dump_json(
@@ -221,9 +245,14 @@ def main() -> None:
                 "notes_scanned": 0,
                 "tasks_extracted": 0,
                 "items": [],
+                "vault_errors": [note["vault"] for note in missing_vaults],
+                "diagnostic": (
+                    "No notes scanned. Check that obsidian_vault_paths in lab_profile.yaml "
+                    "points to a path accessible from this machine."
+                ),
             },
         )
-        print("No project notes found to scan")
+        print("WARNING [obsidian_todos] No project notes found to scan — tasks section will be empty in digest.", file=sys.stderr)
         return
 
     # Step 1: send each note individually to extract 3-5 tasks

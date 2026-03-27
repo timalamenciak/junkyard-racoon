@@ -21,11 +21,20 @@ def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     scoring_rules = "\n".join(f"- {item}" for item in lab_profile.get("grant_scoring_rules", []))
     lines = []
     for idx, grant in enumerate(grants):
+        meta_parts = [f"Source: {grant.get('source', '')}"]
+        if grant.get("program"):
+            meta_parts.append(f"Program: {grant.get('program', '')}")
+        if grant.get("amount"):
+            meta_parts.append(f"Amount: {grant.get('amount', '')}")
+        if grant.get("deadline"):
+            meta_parts.append(f"Deadline: {grant.get('deadline', '')}")
+        if grant.get("status"):
+            meta_parts.append(f"Status: {grant.get('status', '')}")
         lines.append(
             f"[{idx}] {grant.get('title', '')}\n"
-            f"Source: {grant.get('source', '')}\n"
+            + "\n".join(meta_parts) + "\n"
             f"Tags: {', '.join(grant.get('tags', []))}\n"
-            f"Summary: {grant.get('summary', '')[:800]}\n"
+            f"Notes/Summary: {grant.get('summary', '')[:800]}\n"
             f"Link: {grant.get('link', '')}"
         )
     system = (
@@ -99,8 +108,18 @@ def main() -> None:
     else:
         score_grants_llm(grants, lab_profile)
 
-    relevant = [item for item in grants if item.get("relevance_score", 0.0) >= float(lab_profile.get("grant_relevance_threshold", 0.65))]
-    relevant.sort(key=lambda item: item.get("relevance_score", 0.0), reverse=True)
+    threshold = float(lab_profile.get("grant_relevance_threshold", 0.65))
+    relevant = [
+        item for item in grants
+        if item.get("always_surface") or item.get("relevance_score", 0.0) >= threshold
+    ]
+    # Sort: manual/always-surface grants first (sorted by deadline), then by score
+    def _sort_key(item: dict):
+        is_manual = item.get("always_surface", False)
+        deadline = item.get("deadline", "9999-99-99")
+        score = item.get("relevance_score", 0.0)
+        return (0 if is_manual else 1, deadline, -score)
+    relevant.sort(key=_sort_key)
     dump_json(
         PROCESSING_DIR / "scored_grants.json",
         {

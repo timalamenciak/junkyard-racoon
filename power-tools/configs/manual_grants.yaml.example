@@ -1,0 +1,73 @@
+# Manual grant tracker
+# ─────────────────────────────────────────────────────────────────────────────
+# Grants you are actively tracking, drafting, or have submitted.
+# These are ALWAYS surfaced in the digest regardless of LLM relevance score.
+# The LLM will still score them and generate a summary + recommended next step,
+# which is useful for planning — but they will never be filtered out.
+#
+# Copy this file to manual_grants.yaml and edit. Add as many entries as needed.
+#
+# Fields:
+#   title       (required)  Display name for the grant
+#   funder      (required)  Funding agency, e.g. SSHRC, NSERC, CFI, Tri-Agency
+#   program                 Specific program name
+#   amount                  Expected or maximum award as a plain string
+#   deadline    (required)  Application deadline in YYYY-MM-DD format.
+#                           Entries with past deadlines are automatically hidden.
+#   link                    URL to the program page or competition notice
+#   status      (required)  One of: tracking | drafting | submitted | awarded | declined
+#   notes                   Free-form context: eligibility notes, partner contacts,
+#                           LOI dates, internal decision points. Passed to the LLM
+#                           as the grant summary so be as detailed as helpful.
+
+grants:
+
+  - title: SSHRC Insight Development Grant
+    funder: SSHRC
+    program: Insight Development Grant
+    amount: Up to $75,000 over 2 years
+    deadline: "2026-10-15"
+    link: https://www.sshrc-crsh.gc.ca/funding-financement/programs-programmes/insight_development_grants-subventions_de_developpement_savoir-eng.aspx
+    status: tracking
+    notes: >
+      IDG for emerging researchers developing new research questions or testing
+      new methodologies. Budget ceiling $75k over 2 years.
+      Requires CCV, research proposal, budget justification.
+      Check competition notice for current deadline — listed date is approximate.
+
+  - title: NSERC Discovery Grant
+    funder: NSERC
+    program: Discovery Grants Program — Individual
+    amount: Varies; typical ecology awards $25,000–$80,000/year
+    deadline: "2026-11-01"
+    link: https://www.nserc-crsng.gc.ca/Professors-Professeurs/grants-subs/dgigp-psigp_eng.asp
+    status: tracking
+    notes: >
+      Annual competition with November 1 deadline for most disciplines.
+      Requires full application package including CCV, research proposal,
+      contributions to training, and HQP details.
+
+  - title: NSERC Alliance Grant
+    funder: NSERC
+    program: Alliance
+    amount: $150,000–$1M+ depending on partner contributions
+    deadline: "2026-05-15"
+    link: https://www.nserc-crsng.gc.ca/Professors-Professeurs/grants-subs/alliance-alliance_eng.asp
+    status: drafting
+    notes: >
+      Requires formal non-profit or industry partner with cash or in-kind
+      contributions. Grand River Conservation Authority or Nature Conservancy
+      of Canada could be a fit. No LOI required; apply any time (rolling intake)
+      but internal deadlines apply — confirm with research office.
+
+  - title: CFI John R. Evans Leaders Fund
+    funder: Canada Foundation for Innovation
+    program: John R. Evans Leaders Fund (JELF)
+    amount: Up to $500,000 (institution matches 40%)
+    deadline: "2026-09-01"
+    link: https://www.innovation.ca/apply-manage-awards/funding-opportunities/john-r-evans-leaders-fund/
+    status: tracking
+    notes: >
+      For early-career researchers within 10 years of first faculty appointment.
+      Must be nominated by WLU research office — confirm eligibility window.
+      Covers research infrastructure (computing, equipment, field tools).

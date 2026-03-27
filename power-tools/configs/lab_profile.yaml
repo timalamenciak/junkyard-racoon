@@ -29,5 +29,19 @@ todo_extraction_rules:
   - Prefer concrete actions over vague ideas.
   - Include likely owner guesses only when there is clear textual evidence.
   - Mark tasks as urgent when the note implies immediate action, a deadline, or blocking dependency.
+# obsidian_vault_paths: paths must be accessible FROM THE MACHINE RUNNING THE PIPELINE.
+# On the Ubuntu server (racoon-services) this must be a Linux path, e.g.:
+#   /home/ubuntu/obsidian-vault
+# The Windows path below only works when running the pipeline locally on your Windows machine.
+# To get tasks working on the server, sync your vault to a Linux path first — see README.md.
+#
+# You can list multiple paths (e.g. one local Windows path + one server path);
+# the pipeline will use whichever ones actually exist on the current machine.
 obsidian_vault_paths:
-  - C:\Users\Tim\Obsidian\LabVault
+  - C:\Users\Tim\Obsidian\LabVault     # local Windows — works when running pipeline on your laptop
+  # - /home/ubuntu/obsidian-vault      # server path — uncomment after syncing vault with Syncthing/rsync
+
+# Glob patterns for project files within each vault (relative to vault root).
+# Defaults to Projects/**/*.md if not set.
+todo_project_globs:
+  - Projects/**/*.md

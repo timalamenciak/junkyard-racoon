@@ -134,6 +134,15 @@ def collect_all_tags(jobs: list[dict]) -> list[str]:
     return sorted(tags)
 
 
+_GRANT_STATUS_CLASS = {
+    "tracking": "status-tracking",
+    "drafting": "status-drafting",
+    "submitted": "status-submitted",
+    "awarded": "status-awarded",
+    "declined": "status-declined",
+}
+
+
 def render_item_list(items: list[dict], empty_text: str, score_key: str | None = None, action_key: str | None = None) -> str:
     if not items:
         return f"<p class='empty'>{_clean(empty_text)}</p>"
@@ -142,8 +151,17 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
         summary = _clean(item.get("llm_summary") or item.get("summary", ""))
+        is_manual = bool(item.get("always_surface"))
         meta: list[str] = []
-        if score_key and item.get(score_key) is not None:
+        if is_manual:
+            status = str(item.get("status", "tracking")).lower()
+            cls = _GRANT_STATUS_CLASS.get(status, "status-tracking")
+            meta.append(f"<span class='grant-status {cls}'>{html.escape(status)}</span>")
+            if item.get("deadline"):
+                meta.append(f"<span class='grant-deadline'>due {_clean(item.get('deadline', ''))}</span>")
+            if item.get("amount"):
+                meta.append(f"<span class='grant-amount'>{_clean(item.get('amount', ''))}</span>")
+        elif score_key and item.get(score_key) is not None:
             try:
                 meta.append(f"<code>{int(float(item.get(score_key, 0)) * 100)}%</code>")
             except Exception:
@@ -151,6 +169,8 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
         if action_key and item.get(action_key):
             meta.append(_clean(item.get(action_key, "")))
         parts.append("<li>")
+        if is_manual:
+            parts.append("<span class='manual-grant-marker'>&#x1F4CB; tracking</span> ")
         if link:
             parts.append(f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>")
         else:
@@ -166,7 +186,13 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
 
 def render_todo_list(todos: list[dict]) -> str:
     if not todos:
-        return ""
+        return (
+            "<p class='empty todo-empty'>"
+            "No tasks extracted. Check that <code>obsidian_vault_paths</code> in "
+            "<code>lab_profile.yaml</code> points to a path accessible from this server, "
+            "then re-run the pipeline."
+            "</p>"
+        )
     priority_class = {"high": "todo-high", "urgent": "todo-urgent", "medium": "todo-medium", "low": "todo-low"}
     parts = ["<ul class='todo-list'>"]
     for todo in todos[:15]:
@@ -315,14 +341,12 @@ def render_metric_chips(digests: list[dict], jobs: list[dict]) -> str:
 def render_digest_section(digest: dict) -> str:
     digest_date = _clean(digest.get("date", "unknown"))
     todos = digest.get("prioritized_todos", [])
-    todos_html = ""
-    if todos:
-        todos_html = (
-            "<div class='todos-section'>"
-            "<h3>Priority Tasks</h3>"
-            + render_todo_list(todos)
-            + "</div>"
-        )
+    todos_html = (
+        "<div class='todos-section'>"
+        "<h3>Priority Tasks</h3>"
+        + render_todo_list(todos)
+        + "</div>"
+    )
     return (
         f"<section id='{digest_date}' class='digest-card'>"
         "<div class='section-heading'>"
@@ -483,6 +507,17 @@ _CSS = """
   .todo-task{font-size:0.93rem;flex:1 1 200px;}
   .todo-project{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}
   .todo-note{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}
+
+  /* ── Manual grant badges ── */
+  .manual-grant-marker{font-size:0.7rem;font-family:var(--mono);color:var(--scrap);margin-right:4px;}
+  .grant-status,.grant-deadline,.grant-amount{display:inline-block;font-size:0.72rem;font-family:var(--mono);border-radius:999px;padding:2px 8px;line-height:1.5;}
+  .grant-deadline{background:rgba(210,143,44,0.12);color:#7a4c0a;border:1px solid rgba(210,143,44,0.25);}
+  .grant-amount{background:rgba(45,92,64,0.08);color:var(--accent);border:1px solid rgba(45,92,64,0.18);}
+  .status-tracking{background:rgba(100,120,200,0.1);color:#2a3a8a;border:1px solid rgba(100,120,200,0.25);}
+  .status-drafting{background:rgba(210,143,44,0.14);color:#7a4c0a;border:1px solid rgba(210,143,44,0.28);}
+  .status-submitted{background:rgba(45,92,64,0.14);color:var(--accent);border:1px solid rgba(45,92,64,0.25);}
+  .status-awarded{background:rgba(45,150,64,0.15);color:#1a5c28;border:1px solid rgba(45,150,64,0.3);}
+  .status-declined{background:rgba(180,40,40,0.1);color:#8b1a1a;border:1px solid rgba(180,40,40,0.2);}
 """
 
 _JS = """

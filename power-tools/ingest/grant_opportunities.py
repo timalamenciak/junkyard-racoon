@@ -98,6 +98,48 @@ def parse_email_grant_items(message: dict) -> list[dict]:
     ]
 
 
+def load_manual_grant_items() -> list[dict]:
+    """Load manually tracked grants from configs/manual_grants.yaml if present."""
+    config_path = CONFIGS_DIR / "manual_grants.yaml"
+    if not config_path.exists():
+        return []
+    config = load_yaml(config_path)
+    today = datetime.date.today()
+    items: list[dict] = []
+    for entry in config.get("grants", []):
+        if not isinstance(entry, dict):
+            continue
+        title = str(entry.get("title", "")).strip()
+        if not title:
+            continue
+        # Skip entries whose deadline has already passed
+        raw_deadline = str(entry.get("deadline", "")).strip()
+        if raw_deadline:
+            try:
+                deadline_date = datetime.date.fromisoformat(raw_deadline[:10])
+                if deadline_date < today:
+                    continue
+            except ValueError:
+                pass
+        items.append(
+            {
+                "source_type": "manual",
+                "source": str(entry.get("funder", "Manual")).strip(),
+                "title": title,
+                "program": str(entry.get("program", "")).strip(),
+                "link": str(entry.get("link", "")).strip(),
+                "summary": str(entry.get("notes", "")).strip(),
+                "amount": str(entry.get("amount", "")).strip(),
+                "deadline": raw_deadline,
+                "status": str(entry.get("status", "tracking")).strip().lower(),
+                "published": today.isoformat(),
+                "tags": ["manual", str(entry.get("funder", "")).lower().replace(" ", "-")],
+                "always_surface": True,
+            }
+        )
+    return items
+
+
 def load_email_grant_items() -> list[dict]:
     payload = load_json(INGEST_DIR / "email_messages.json", default={"items": []}) or {}
     items: list[dict] = []
@@ -125,7 +167,8 @@ def main() -> None:
     if is_test_mode():
         rss_items = sample_items()
         email_items = load_email_grant_items()
-        items = rss_items + email_items
+        manual_items = load_manual_grant_items()
+        items = rss_items + email_items + manual_items
         dump_json(
             INGEST_DIR / "grant_opportunities.json",
             {
@@ -135,7 +178,7 @@ def main() -> None:
             },
         )
         print(f"Wrote {len(items)} sample grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
-        print(f"[grant_opportunities] counts: rss={len(rss_items)}, email={len(email_items)}, merged={len(items)}")
+        print(f"[grant_opportunities] counts: rss={len(rss_items)}, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
         return
 
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
@@ -173,13 +216,15 @@ def main() -> None:
 
     rss_count = len(items)
     email_items = load_email_grant_items()
+    manual_items = load_manual_grant_items()
     items.extend(email_items)
+    items.extend(manual_items)
     dump_json(
         INGEST_DIR / "grant_opportunities.json",
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
     )
     print(f"Wrote {len(items)} grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
-    print(f"[grant_opportunities] counts: rss={rss_count}, email={len(email_items)}, merged={len(items)}")
+    print(f"[grant_opportunities] counts: rss={rss_count}, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
     if failed_sources:
         print(f"[grant_opportunities] {len(failed_sources)} source(s) unavailable: {', '.join(failed_sources)}", file=sys.stderr)
 

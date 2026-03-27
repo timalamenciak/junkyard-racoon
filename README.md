@@ -19,7 +19,7 @@ Each night `power-tools/nightly_run.py` runs all pipeline steps in order. Steps 
 - Python 3.10+
 - pip packages: `pip install pyyaml requests matrix-nio feedparser`
 - An LLM endpoint (local or API) — see [Configuring the LLM](#configuring-the-llm)
-- Obsidian vault at the path set in `lab_profile.yaml` (for the tasks pipeline)
+- Obsidian vault synced to the server (for the tasks pipeline) — see [Syncing the Obsidian vault](#syncing-the-obsidian-vault)
 
 ---
 
@@ -63,6 +63,7 @@ All configs live in `power-tools/configs/`. None of these are committed — copy
 | `grants.yaml` | RSS feeds for grant opportunities |
 | `jobs.yaml` | Job board URLs to scrape (GoodWork, University Affairs, etc.) |
 | `collaborators.yaml` | ORCID IDs to monitor for new publications |
+| `manual_grants.yaml` | Grants you are manually tracking — always surfaced in digest regardless of LLM score. Copy from `manual_grants.yaml.example`. |
 
 ### Configuring the LLM
 
@@ -286,6 +287,65 @@ Each daily digest includes 5 LLM-generated toots (stored in `daily_digest.json` 
    ```
 
 The script is idempotent — it tracks the last posted date in `data/state/mastodon_posted.json` and skips if today's toots have already gone out, so re-running the pipeline won't double-post.
+
+---
+
+## Syncing the Obsidian vault
+
+The tasks pipeline (`obsidian_todos.py`) reads markdown files directly from your Obsidian vault. The pipeline running on the Ubuntu server cannot read `C:\Users\Tim\Obsidian\LabVault` — it needs a copy of the vault at a local Linux path.
+
+### Option A — Syncthing (recommended, ongoing sync)
+
+1. Install Syncthing on both your Windows machine and the server:
+   ```bash
+   # Server
+   sudo apt install syncthing
+   sudo systemctl enable --now syncthing@ubuntu
+   # Then open http://racoon-services:8384 to configure the web UI
+   ```
+2. On Windows, install [Syncthing for Windows](https://syncthing.net/downloads/)
+3. Pair the two devices and share your `LabVault` folder to `/home/ubuntu/obsidian-vault` on the server
+4. Uncomment and set the server path in `lab_profile.yaml`:
+   ```yaml
+   obsidian_vault_paths:
+     - /home/ubuntu/obsidian-vault
+   ```
+
+### Option B — rsync one-way push (simpler, pre-run)
+
+On your Windows machine (WSL2 or Git Bash), schedule a task that runs before the 6:15 AM pipeline:
+
+```bash
+rsync -av --include="*/" --include="*.md" --exclude="*" \
+  "/mnt/c/Users/Tim/Obsidian/LabVault/" \
+  ubuntu@racoon-services:/home/ubuntu/obsidian-vault/
+```
+
+Or as a Windows Task Scheduler job calling `wsl rsync ...` — set it to run at 6:00 AM daily, 15 minutes before the pipeline.
+
+### Option C — Git-backed vault
+
+If your vault is in a private git repo, add a pull step before the pipeline:
+
+```bash
+# In the systemd service ExecStartPre, or at the top of nightly_run.py
+git -C /home/ubuntu/obsidian-vault pull --quiet
+```
+
+### After syncing
+
+Update `power-tools/configs/lab_profile.yaml`:
+
+```yaml
+obsidian_vault_paths:
+  - /home/ubuntu/obsidian-vault   # server path (Linux)
+  # - C:\Users\Tim\Obsidian\LabVault  # keep if also running locally on Windows
+
+todo_project_globs:
+  - Projects/**/*.md
+```
+
+The pipeline will use whichever paths actually exist on the current machine, so you can keep both and it works on both Windows and Linux.
 
 ---
 
