@@ -77,6 +77,7 @@ def merge_digest_history(existing: list[dict], incoming: dict, current_date: dat
         "relevant_news": incoming.get("relevant_news", []),
         "relevant_articles": incoming.get("relevant_articles", []),
         "relevant_grants": incoming.get("relevant_grants", []),
+        "prioritized_todos": incoming.get("prioritized_todos", []),
     }
     kept = [item for item in by_date.values() if _parse_date(item.get("date", ""))]
     kept = [item for item in kept if (current_date - _parse_date(item["date"])).days <= MAX_HISTORY_DAYS]
@@ -158,6 +159,31 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
             parts.append(f"<div class='meta'>{' &middot; '.join(meta)}</div>")
         if summary:
             parts.append(f"<p>{summary}</p>")
+        parts.append("</li>")
+    parts.append("</ul>")
+    return "".join(parts)
+
+
+def render_todo_list(todos: list[dict]) -> str:
+    if not todos:
+        return ""
+    priority_class = {"high": "todo-high", "urgent": "todo-urgent", "medium": "todo-medium", "low": "todo-low"}
+    parts = ["<ul class='todo-list'>"]
+    for todo in todos[:15]:
+        priority = str(todo.get("priority", "medium")).lower()
+        cls = priority_class.get(priority, "todo-medium")
+        task = _clean(todo.get("task", ""))
+        project = _clean(todo.get("project", ""))
+        rationale = _clean(todo.get("rationale", "") or todo.get("impact", ""))
+        if not task:
+            continue
+        parts.append("<li class='todo-item'>")
+        parts.append(f"<span class='todo-badge {cls}'>{html.escape(priority)}</span>")
+        parts.append(f"<span class='todo-task'>{task}</span>")
+        if project:
+            parts.append(f"<span class='todo-project'>{project}</span>")
+        if rationale:
+            parts.append(f"<p class='todo-note'>{rationale}</p>")
         parts.append("</li>")
     parts.append("</ul>")
     return "".join(parts)
@@ -288,6 +314,15 @@ def render_metric_chips(digests: list[dict], jobs: list[dict]) -> str:
 
 def render_digest_section(digest: dict) -> str:
     digest_date = _clean(digest.get("date", "unknown"))
+    todos = digest.get("prioritized_todos", [])
+    todos_html = ""
+    if todos:
+        todos_html = (
+            "<div class='todos-section'>"
+            "<h3>Priority Tasks</h3>"
+            + render_todo_list(todos)
+            + "</div>"
+        )
     return (
         f"<section id='{digest_date}' class='digest-card'>"
         "<div class='section-heading'>"
@@ -305,7 +340,8 @@ def render_digest_section(digest: dict) -> str:
         + render_item_list(digest.get("relevant_grants", []), "No high-fit grant opportunities.", "relevance_score", "next_step")
         + "</div>"
         "</div>"
-        "</section>"
+        + todos_html
+        + "</section>"
     )
 
 
@@ -430,7 +466,23 @@ _CSS = """
     .jobs-table tbody tr.hidden{display:none;}
     .jobs-table td{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:10px 12px;}
     .jobs-table td::before{content:attr(data-label);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}
+    .todo-list{flex-direction:column;}
+    .todo-item{flex:1 1 auto;}
   }
+
+  /* ── Todo list ── */
+  .todos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;}
+  .todos-section h3{margin:0 0 14px;font-size:1rem;}
+  .todo-list{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;}
+  .todo-item{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;flex:1 1 280px;}
+  .todo-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.68rem;font-family:var(--mono);letter-spacing:0.07em;text-transform:uppercase;line-height:1.5;flex-shrink:0;}
+  .todo-high{background:rgba(210,143,44,0.18);color:#7a4c0a;border:1px solid rgba(210,143,44,0.3);}
+  .todo-urgent{background:rgba(180,40,40,0.12);color:#8b1a1a;border:1px solid rgba(180,40,40,0.22);}
+  .todo-medium{background:rgba(45,92,64,0.1);color:var(--accent);border:1px solid rgba(45,92,64,0.2);}
+  .todo-low{background:rgba(100,100,100,0.07);color:var(--muted);border:1px solid rgba(100,100,100,0.14);}
+  .todo-task{font-size:0.93rem;flex:1 1 200px;}
+  .todo-project{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}
+  .todo-note{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}
 """
 
 _JS = """
@@ -541,10 +593,11 @@ def render_index(state: dict, public_url: str) -> str:
     latest_date = _clean(digests[0]["date"]) if digests else "unknown"
     all_tags = collect_all_tags(jobs)
 
-    sidebar_links = ["<li><a href='#jobs'>Open Jobs</a></li>"]
+    sidebar_links = []
     for digest in digests:
         date_str = _clean(digest.get("date", "unknown"))
         sidebar_links.append(f"<li><a href='#{date_str}'>{date_str}</a></li>")
+    sidebar_links.append("<li><a href='#jobs'>Open Jobs</a></li>")
     archive_links = []
     for digest in digests:
         date_str = _clean(digest.get("date", "unknown"))
@@ -582,6 +635,7 @@ def render_index(state: dict, public_url: str) -> str:
         </div>
         <div class="metrics">{render_metric_chips(digests, jobs)}</div>
       </section>
+      {''.join(render_digest_section(digest) for digest in digests)}
       <section id="jobs" class="jobs-card">
         <div class="section-heading">
           <h2>Open Jobs</h2>
@@ -591,7 +645,6 @@ def render_index(state: dict, public_url: str) -> str:
         {render_jobs_controls(all_tags)}
         {render_jobs_table(jobs)}
       </section>
-      {''.join(render_digest_section(digest) for digest in digests)}
     </main>
   </div>
   <script>{_JS}</script>
@@ -678,12 +731,12 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     <h1>Daily Digest {digest_date}</h1>
     <p>Base URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
   </div>
+  {render_digest_section(digest)}
   <div class="panel">
     <div class="section-heading"><h2>Open Jobs</h2><span class="section-tag">live board</span></div>
     {render_jobs_controls(all_tags)}
     {render_jobs_table(jobs)}
   </div>
-  {render_digest_section(digest)}
   <script>{_JS}</script>
 </body>
 </html>
@@ -713,10 +766,15 @@ def main() -> None:
     deploy_dir_value = str(static_cfg.get("deploy_dir", "")).strip()
     deploy_dir = Path(deploy_dir_value) if deploy_dir_value else None
 
+    lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
+    job_threshold = float(lab_profile.get("job_relevance_threshold", 0.80))
+
     current_date = datetime.date.fromisoformat(digest.get("date", datetime.date.today().isoformat()))
     state = load_state()
     state["digests"] = merge_digest_history(state.get("digests", []), digest, current_date)
     state["jobs"] = merge_jobs(state.get("jobs", []), digest.get("open_jobs", []), current_date)
+    # Evict any jobs that fall below the current relevance threshold (catches stale pre-threshold entries)
+    state["jobs"] = [j for j in state["jobs"] if float(j.get("student_relevance_score", 0.0)) >= job_threshold]
     state["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     save_state(state)
 

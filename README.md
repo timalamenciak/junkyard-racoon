@@ -248,7 +248,44 @@ LLM settings come from `power-tools/configs/llm.yaml` automatically. The daemon 
 
 ## Mastodon output
 
-Each daily digest now includes 5 suggested toots (in `daily_digest.json` under `mastodon_toots` and appended to `daily_digest.md`). These are LLM-generated in the voice of the Junkyard Racoon account. Post them manually or wire up an auto-posting script to your Mastodon instance.
+Each daily digest includes 5 LLM-generated toots (stored in `daily_digest.json` under `mastodon_toots`). `post_mastodon.py` posts them automatically as part of the nightly pipeline.
+
+### One-time setup
+
+1. **Create a Mastodon application** on your instance:
+   - Go to `https://your-instance/settings/applications`
+   - Click **New Application**
+   - Name it something like `Junkyard Racoon Bot`
+   - Scopes needed: `write:statuses` only
+   - Click **Submit**, then copy the **Your access token** value
+
+2. **Set environment variables** (same rules as Matrix — single quotes in bash, bare values in systemd `EnvironmentFile`):
+
+   ```bash
+   export MASTODON_INSTANCE_URL='https://your-instance.social'
+   export MASTODON_ACCESS_TOKEN='your-token-here'
+   ```
+
+   Optional:
+
+   | Variable | Default | Description |
+   |----------|---------|-------------|
+   | `MASTODON_POST_DELAY_SEC` | `30` | Seconds to wait between toots (avoids rate-limiting) |
+   | `MASTODON_VISIBILITY` | `public` | `public`, `unlisted`, or `private` |
+
+3. **Test without actually posting:**
+
+   ```bash
+   POWER_TOOLS_TEST_MODE=1 python power-tools/output/post_mastodon.py
+   ```
+
+4. **Post today's toots manually** (before enabling in the nightly run):
+
+   ```bash
+   python power-tools/output/post_mastodon.py
+   ```
+
+The script is idempotent — it tracks the last posted date in `data/state/mastodon_posted.json` and skips if today's toots have already gone out, so re-running the pipeline won't double-post.
 
 ---
 
