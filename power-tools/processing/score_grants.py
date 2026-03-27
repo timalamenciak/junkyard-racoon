@@ -62,7 +62,19 @@ def score_grants_llm(grants: list[dict], lab_profile: dict) -> None:
                 file=sys.stderr,
             )
             continue
+        if not isinstance(scored, list):
+            print(
+                f"Warning: LLM scoring returned non-list payload for grants {batch_start}-{batch_start + len(batch) - 1}",
+                file=sys.stderr,
+            )
+            continue
         for item in scored:
+            if not isinstance(item, dict):
+                print(
+                    f"Warning: skipping malformed grant score item in batch {batch_start}-{batch_start + len(batch) - 1}: {item!r}",
+                    file=sys.stderr,
+                )
+                continue
             local_idx = item.get("index")
             if isinstance(local_idx, int) and 0 <= local_idx < len(batch):
                 g = grants[batch_start + local_idx]

@@ -105,6 +105,12 @@ def extract_tasks_from_note(note: dict, extraction_rules: list[str]) -> list[dic
             return []
         items = []
         for task in parsed:
+            if not isinstance(task, dict):
+                print(
+                    f"Warning: skipping malformed task extraction item for {note.get('note', '?')}: {task!r}",
+                    file=sys.stderr,
+                )
+                continue
             task_text = str(task.get("task", "")).strip()
             if not task_text:
                 continue
@@ -159,9 +165,15 @@ def score_task_impact(extracted_items: list[dict]) -> list[dict]:
         temperature=0.0,
     )
     parsed = extract_json_payload(response)
+    if not isinstance(parsed, list):
+        print("Warning: task impact scoring returned non-list payload", file=sys.stderr)
+        return extracted_items
 
     prioritized: list[dict] = []
     for item in parsed:
+        if not isinstance(item, dict):
+            print(f"Warning: skipping malformed task scoring item: {item!r}", file=sys.stderr)
+            continue
         source_idx = item.get("index")
         if not (isinstance(source_idx, int) and 0 <= source_idx < len(extracted_items)):
             continue
