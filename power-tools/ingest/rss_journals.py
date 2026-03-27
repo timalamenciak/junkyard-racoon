@@ -8,21 +8,26 @@ from email.utils import parsedate_to_datetime
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlencode
 
 import feedparser
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from common.http_utils import fetch_bytes
+from common.http_utils import fetch_bytes, fetch_json
 from common.email_source_registry import route_matches_target
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, STATE_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
 from common.journal_email_parser import parse_journal_email_articles
-from common.record_utils import canonicalize_url, fingerprint_record, merge_records
+from common.record_utils import canonicalize_url, fingerprint_record, merge_records, normalize_date, normalize_title
 from common.runtime import is_test_mode
 
 
 HTML_RE = re.compile(r"<[^>]+>")
 WS_RE = re.compile(r"\s+")
+DOI_RE = re.compile(r"(10\.\d{4,9}/[-._;()/:A-Z0-9]+)", re.IGNORECASE)
+OPENALEX_API_BASE = "https://api.openalex.org/works"
+DEFAULT_OPENALEX_LOOKBACK_DAYS = 3
+DEFAULT_OPENALEX_PER_PAGE = 50
 
 
 def strip_html(text: str) -> str:
@@ -49,13 +54,142 @@ def article_key(link: str, title: str, published: str) -> str:
     return "||".join((link.strip(), title.strip().lower(), published.strip()))
 
 
+def normalize_doi(value: str) -> str:
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    raw = re.sub(r"^https?://(dx\.)?doi\.org/", "", raw, flags=re.IGNORECASE)
+    match = DOI_RE.search(raw)
+    if not match:
+        return ""
+    return match.group(1).rstrip(").,;]").lower()
+
+
+def extract_doi(item: dict) -> str:
+    for candidate in (item.get("doi", ""), item.get("canonical_link", ""), item.get("link", ""), item.get("summary", "")):
+        doi = normalize_doi(str(candidate or ""))
+        if doi:
+            return doi
+    return ""
+
+
+def article_identity(item: dict) -> str:
+    doi = extract_doi(item)
+    if doi:
+        return f"doi::{doi}"
+    title = normalize_title(item.get("title", ""))
+    published = normalize_date(item.get("published", ""))
+    if title and published:
+        return f"title-date::{title}||{published}"
+    link = canonicalize_url(item.get("link", ""))
+    if title or link or published:
+        return f"fingerprint::{fingerprint_record(item.get('title', ''), item.get('link', ''), item.get('published', ''))}"
+    return ""
+
+
+def reconstruct_openalex_abstract(inverted_index: dict[str, list[int]] | None) -> str:
+    if not isinstance(inverted_index, dict):
+        return ""
+    positions: dict[int, str] = {}
+    for word, offsets in inverted_index.items():
+        if not isinstance(offsets, list):
+            continue
+        for offset in offsets:
+            if isinstance(offset, int):
+                positions[offset] = str(word)
+    if not positions:
+        return ""
+    return " ".join(positions[index] for index in sorted(positions))
+
+
+def openalex_to_article(work: dict, keyword: str) -> dict:
+    authors = [authorship.get("author", {}).get("display_name", "").strip() for authorship in work.get("authorships", [])[:5]]
+    authors = [author for author in authors if author]
+    doi = normalize_doi(work.get("doi", ""))
+    landing_page = (work.get("primary_location") or {}).get("landing_page_url", "")
+    link = canonicalize_url(landing_page) or (f"https://doi.org/{doi}" if doi else canonicalize_url(work.get("id", "")))
+    source = (work.get("primary_location") or {}).get("source", {}) or {}
+    summary = reconstruct_openalex_abstract(work.get("abstract_inverted_index"))[:1200]
+    publication_date = (work.get("publication_date") or "").strip()
+    published = f"{publication_date}T00:00:00+00:00" if publication_date else "unknown"
+    openalex_id = (work.get("id", "") or "").strip()
+    article_key_link = link or canonicalize_url(openalex_id)
+    return {
+        "source_type": "journal_openalex",
+        "feed": source.get("display_name", "") or "OpenAlex",
+        "title": (work.get("display_name") or "").strip(),
+        "link": link,
+        "summary": summary,
+        "published": published,
+        "tags": ["openalex", keyword],
+        "article_key": article_key(article_key_link, work.get("display_name", ""), published),
+        "canonical_link": link,
+        "authors": ", ".join(authors),
+        "doi": doi,
+        "openalex_id": openalex_id,
+        "open_access": bool((work.get("open_access") or {}).get("is_oa", False)),
+        "matched_keyword": keyword,
+    }
+
+
+def load_openalex_article_items(config: dict, seen_article_keys: set[str], seen_article_identities: set[str]) -> list[dict]:
+    openalex_cfg = dict(config.get("openalex", {}) or {})
+    if openalex_cfg.get("enabled", True) is False:
+        return []
+
+    lookback_days = int(openalex_cfg.get("lookback_days", DEFAULT_OPENALEX_LOOKBACK_DAYS))
+    per_page = int(openalex_cfg.get("per_page", DEFAULT_OPENALEX_PER_PAGE))
+    from_date = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=lookback_days)).date().isoformat()
+
+    lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
+    configured_keywords = [str(keyword).strip() for keyword in openalex_cfg.get("keywords", []) if str(keyword).strip()]
+    keywords = configured_keywords or [str(keyword).strip() for keyword in lab_profile.get("research_interests", []) if str(keyword).strip()]
+    mailto = str(openalex_cfg.get("mailto", "")).strip()
+
+    items: list[dict] = []
+    local_identities: set[str] = set()
+    local_article_keys: set[str] = set()
+    for keyword in keywords:
+        params = {
+            "search": f"\"{keyword}\"",
+            "filter": f"from_publication_date:{from_date},is_retracted:false,type:article",
+            "sort": "publication_date:desc",
+            "per-page": per_page,
+        }
+        if mailto:
+            params["mailto"] = mailto
+        payload = fetch_json(f"{OPENALEX_API_BASE}?{urlencode(params)}")
+        for work in payload.get("results", []):
+            if not isinstance(work, dict):
+                continue
+            item = openalex_to_article(work, keyword)
+            if not item.get("title"):
+                continue
+            identity = article_identity(item)
+            if item["article_key"] in seen_article_keys:
+                continue
+            if identity and (identity in seen_article_identities or identity in local_identities):
+                continue
+            if item["article_key"] in local_article_keys:
+                continue
+            if identity:
+                local_identities.add(identity)
+            local_article_keys.add(item["article_key"])
+            items.append(item)
+    return items
+
+
 def merge_journal_items(items: list[dict]) -> list[dict]:
-    merged_by_fingerprint: dict[str, dict] = {}
+    merged_by_identity: dict[str, dict] = {}
     order: list[str] = []
     for item in items:
         canonical_link = canonicalize_url(item.get("link", ""))
         if canonical_link:
             item["link"] = canonical_link
+            item["canonical_link"] = canonical_link
+        doi = extract_doi(item)
+        if doi:
+            item["doi"] = doi
         item.setdefault("provenance", [])
         item.setdefault("sources", [])
         if item.get("source_type") == "journal_rss":
@@ -64,26 +198,34 @@ def merge_journal_items(items: list[dict]) -> list[dict]:
         elif item.get("source_type") == "journal_email":
             item["provenance"] = ["email"]
             item["sources"] = [item.get("gmail_label", "") or item.get("feed", "")]
+        elif item.get("source_type") == "journal_openalex":
+            item["provenance"] = ["openalex"]
+            item["sources"] = [item.get("feed", "") or "OpenAlex"]
 
-        fingerprint = fingerprint_record(item.get("title", ""), item.get("link", ""), item.get("published", ""))
-        if not fingerprint.strip("|"):
-            fingerprint = item.get("article_key", "")
-        if fingerprint not in merged_by_fingerprint:
-            merged_by_fingerprint[fingerprint] = item
-            order.append(fingerprint)
+        identity = article_identity(item)
+        if not identity:
+            identity = item.get("article_key", "")
+        if identity not in merged_by_identity:
+            merged_by_identity[identity] = item
+            order.append(identity)
             continue
-        merged_by_fingerprint[fingerprint] = merge_records(
-            merged_by_fingerprint[fingerprint],
+        merged_by_identity[identity] = merge_records(
+            merged_by_identity[identity],
             item,
             preserve_keys=("article_key",),
         )
-    return [merged_by_fingerprint[key] for key in order]
+    return [merged_by_identity[key] for key in order]
 
 
-def load_email_article_items(seen_article_keys: set[str], seen_links: set[str] | None = None) -> list[dict]:
+def load_email_article_items(
+    seen_article_keys: set[str],
+    seen_article_identities: set[str] | None = None,
+    seen_links: set[str] | None = None,
+) -> list[dict]:
     payload = load_json(INGEST_DIR / "email_messages.json", default={"items": []}) or {}
     items: list[dict] = []
     email_seen_fingerprints: set[str] = set()
+    identities = seen_article_identities or set()
     for message in payload.get("items", []):
         if not isinstance(message, dict):
             continue
@@ -99,10 +241,16 @@ def load_email_article_items(seen_article_keys: set[str], seen_links: set[str] |
             key = article_key(link or f"message:{message.get('message_id', '')}", title, published)
             if key in seen_article_keys:
                 continue
+            candidate_item = {"title": title, "link": link, "published": published, "doi": parsed.get("doi", "")}
+            identity = article_identity(candidate_item)
             fingerprint = fingerprint_record(title, link, published)
             if fingerprint in email_seen_fingerprints:
                 continue
+            if identity and identity in identities:
+                continue
             email_seen_fingerprints.add(fingerprint)
+            if identity:
+                identities.add(identity)
             items.append(
                 {
                     "source_type": "journal_email",
@@ -153,9 +301,10 @@ def main() -> None:
     ensure_data_dirs()
     existing_state = load_json(STATE_DIR / "rss_seen_articles.json", default={}) or {}
     seen_article_keys = set(existing_state.get("seen_article_keys", []))
+    seen_article_identities = set(existing_state.get("seen_article_identities", []))
     if is_test_mode():
         rss_items = sample_items()
-        email_items = load_email_article_items(seen_article_keys)
+        email_items = load_email_article_items(seen_article_keys, seen_article_identities)
         items = merge_journal_items(rss_items + email_items)
         dump_json(
             INGEST_DIR / "journal_articles.json",
@@ -166,7 +315,7 @@ def main() -> None:
             },
         )
         print(f"Wrote {len(items)} sample journal articles to {INGEST_DIR / 'journal_articles.json'}")
-        print(f"[rss_journals] counts: rss={len(rss_items)}, email={len(email_items)}, merged={len(items)}")
+        print(f"[rss_journals] counts: rss={len(rss_items)}, email={len(email_items)}, openalex=0, merged={len(items)}")
         return
 
     config = load_yaml(CONFIGS_DIR / "journals.yaml")
@@ -203,23 +352,27 @@ def main() -> None:
             if key in seen_article_keys:
                 continue
 
-            items.append(
-                {
-                    "source_type": "journal_rss",
-                    "feed": feed_name,
-                    "title": title,
-                    "link": link,
-                    "summary": strip_html(entry.get("summary", entry.get("description", ""))),
-                    "published": published,
-                    "tags": feed.get("tags", []),
-                    "article_key": key,
-                    "canonical_link": canonicalize_url(link),
-                }
-            )
+            item = {
+                "source_type": "journal_rss",
+                "feed": feed_name,
+                "title": title,
+                "link": link,
+                "summary": strip_html(entry.get("summary", entry.get("description", ""))),
+                "published": published,
+                "tags": feed.get("tags", []),
+                "article_key": key,
+                "canonical_link": canonicalize_url(link),
+            }
+            identity = article_identity(item)
+            if identity and identity in seen_article_identities:
+                continue
+            items.append(item)
 
     rss_count = len(items)
-    email_items = load_email_article_items(seen_article_keys, seen_links)
+    email_items = load_email_article_items(seen_article_keys, seen_article_identities, seen_links)
+    openalex_items = load_openalex_article_items(config, seen_article_keys, seen_article_identities)
     items.extend(email_items)
+    items.extend(openalex_items)
     items = merge_journal_items(items)
     dump_json(
         INGEST_DIR / "journal_articles.json",
@@ -230,11 +383,13 @@ def main() -> None:
         {
             "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "seen_article_keys": sorted(seen_article_keys),
+            "seen_article_identities": sorted(seen_article_identities),
             "pending_article_keys": sorted(item.get("article_key", "") for item in items if item.get("article_key")),
+            "pending_article_identities": sorted(identity for identity in (article_identity(item) for item in items) if identity),
         },
     )
     print(f"Wrote {len(items)} journal articles to {INGEST_DIR / 'journal_articles.json'}")
-    print(f"[rss_journals] counts: rss={rss_count}, email={len(email_items)}, merged={len(items)}")
+    print(f"[rss_journals] counts: rss={rss_count}, email={len(email_items)}, openalex={len(openalex_items)}, merged={len(items)}")
     if failed_feeds:
         print(f"[rss_journals] {len(failed_feeds)} feed(s) unavailable: {', '.join(failed_feeds)}", file=sys.stderr)
 

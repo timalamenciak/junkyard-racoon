@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from ingest.research_news import merge_news_items
-from ingest.rss_journals import merge_journal_items
+from ingest.rss_journals import article_identity, merge_journal_items
 
 
 def test_merge_journal_items_dedupes_across_rss_and_email_with_provenance() -> None:
@@ -47,6 +47,53 @@ def test_merge_journal_items_dedupes_across_rss_and_email_with_provenance() -> N
     assert items[0]["authors"] == "Alex Rivera, Sam Lee"
     assert items[0]["doi"] == "10.1002/rec.12345"
     assert items[0]["article_key"] == "rss-key"
+
+
+def test_merge_journal_items_dedupes_openalex_against_rss_by_doi() -> None:
+    rss_item = {
+        "source_type": "journal_rss",
+        "feed": "Restoration Ecology",
+        "title": "Community-led restoration outcomes across urban wetlands",
+        "link": "https://onlinelibrary.wiley.com/doi/10.1002/rec.12345?utm_source=rss",
+        "summary": "Short RSS summary.",
+        "published": "2026-03-26T00:00:00+00:00",
+        "tags": ["restoration"],
+        "article_key": "rss-key",
+    }
+    openalex_item = {
+        "source_type": "journal_openalex",
+        "feed": "Restoration Ecology",
+        "title": "Community-led restoration outcomes across urban wetlands",
+        "link": "https://doi.org/10.1002/rec.12345",
+        "summary": "Reconstructed abstract from OpenAlex.",
+        "published": "2026-03-26T00:00:00+00:00",
+        "tags": ["openalex", "restoration ecology"],
+        "article_key": "openalex-key",
+        "doi": "https://doi.org/10.1002/rec.12345",
+        "openalex_id": "https://openalex.org/W123",
+        "authors": "Alex Rivera, Sam Lee",
+        "open_access": True,
+    }
+
+    items = merge_journal_items([rss_item, openalex_item])
+
+    assert len(items) == 1
+    assert items[0]["provenance"] == ["rss", "openalex"]
+    assert items[0]["sources"] == ["Restoration Ecology"]
+    assert items[0]["summary"] == "Short RSS summary."
+    assert items[0]["authors"] == "Alex Rivera, Sam Lee"
+    assert items[0]["doi"] == "10.1002/rec.12345"
+    assert items[0]["openalex_id"] == "https://openalex.org/W123"
+
+
+def test_article_identity_prefers_doi_extracted_from_link() -> None:
+    item = {
+        "title": "Community-led restoration outcomes across urban wetlands",
+        "link": "https://onlinelibrary.wiley.com/doi/10.1002/rec.12345?utm_source=rss",
+        "published": "2026-03-26T00:00:00+00:00",
+    }
+
+    assert article_identity(item) == "doi::10.1002/rec.12345"
 
 
 def test_merge_news_items_dedupes_canonical_urls_and_preserves_richer_metadata() -> None:

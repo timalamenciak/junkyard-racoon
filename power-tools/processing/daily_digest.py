@@ -24,20 +24,67 @@ def _strip_html(text: str) -> str:
     return re.sub(r"\s{2,}", " ", text).strip()
 
 
-def generate_mastodon_toots(digest_markdown: str) -> list[str]:
+def _truncate_plain_text(text: str, limit: int) -> str:
+    value = re.sub(r"\s+", " ", str(text or "")).strip()
+    if len(value) <= limit:
+        return value
+    shortened = value[:limit].rsplit(" ", 1)[0].strip()
+    return f"{shortened}..."
+
+
+def build_article_toot(article: dict) -> str:
+    title = _truncate_plain_text(article.get("title", "New paper for the lab radar"), 180)
+    summary = _truncate_plain_text(article.get("llm_summary") or article.get("summary", ""), 180)
+    score = ""
+    try:
+        score = f" ({int(float(article.get('relevance_score', 0.0)) * 100)}% lab fit)"
+    except Exception:
+        score = ""
+    action = _truncate_plain_text(article.get("recommended_action", ""), 90)
+    link = str(article.get("link", "")).strip()
+
+    lines = [f"New journal article on the Racoon Lab radar: {title}{score}."]
+    if summary:
+        lines.append(summary)
+    if action:
+        lines.append(f"Next step: {action}.")
+    lines.append("#EcologyResearch #RestorationEcology #ConservationScience")
+    if link:
+        lines.append(link)
+    return "\n".join(line for line in lines if line).strip()
+
+
+def ensure_article_toots(toots: list[str], relevant_articles: list[dict]) -> list[str]:
+    if not relevant_articles:
+        return toots[:5]
+
+    article_titles = {str(article.get("title", "")).strip().lower() for article in relevant_articles if str(article.get("title", "")).strip()}
+    article_links = {str(article.get("link", "")).strip() for article in relevant_articles if str(article.get("link", "")).strip()}
+    for toot in toots:
+        lowered = toot.lower()
+        if any(title and title in lowered for title in article_titles):
+            return toots[:5]
+        if any(link and link in toot for link in article_links):
+            return toots[:5]
+
+    return [build_article_toot(relevant_articles[0]), *toots][:5]
+
+
+def generate_mastodon_toots(digest_markdown: str, relevant_articles: list[dict]) -> list[str]:
     """Ask the LLM to generate 5 Mastodon toots from the daily digest."""
     clean_digest = _strip_html(digest_markdown)
     system = (
-        "You are the Junkyard Racoon — a scrappy, curious research lab mascot who actually reads the literature.\n"
+        "You are the Junkyard Racoon, a scrappy and curious research lab mascot who actually reads the literature.\n"
         "Your Mastodon account shares conservation science news, research finds, job tips, and grant alerts.\n"
         "Tone: witty, nature-forward, genuinely informative. Not corporate. Not preachy.\n"
         "Generate exactly 5 Mastodon toots based on the daily digest. Each toot must:\n"
-        "- Be under 500 characters (including hashtags)\n"
+        "- Be under 500 characters including hashtags\n"
         "- Be self-contained and interesting to the conservation science community\n"
         "- Include 2-4 relevant hashtags\n"
-        "- Cover a distinct angle: new research, job/career tip, grant alert, news, or lab insight\n"
-        "- Use plain text only — no HTML tags, no Markdown links, no angle brackets\n"
+        "- Cover a distinct angle such as new research, job/career tip, grant alert, news, or lab insight\n"
+        "- Use plain text only with no HTML tags, Markdown links, or angle brackets\n"
         "- Where you reference a specific article or source, include its plain URL on its own line\n"
+        "- If there are papers in the Relevant Papers section, at least one toot must clearly reference one of those papers by title or URL\n"
         "Return only JSON as a list of exactly 5 plain-text strings."
     )
     user = f"Based on this daily digest, what are 5 Mastodon toots that the Junkyard Racoon account could toot?\n\n{clean_digest[:4000]}"
@@ -48,17 +95,18 @@ def generate_mastodon_toots(digest_markdown: str) -> list[str]:
     )
     parsed = extract_json_payload(response)
     if isinstance(parsed, list):
-        return [str(t).strip() for t in parsed if str(t).strip()][:5]
+        toots = [str(t).strip() for t in parsed if str(t).strip()][:5]
+        return ensure_article_toots(toots, relevant_articles)
     return []
 
 
 def sample_mastodon_toots() -> list[str]:
     return [
-        "New in restoration ecology: participatory planning with AI decision-support agents is showing real promise for community-led projects. The future of restoration might be collaborative by design. 🌿 #RestorationEcology #ConservationScience #AI",
-        "Hiring alert for conservation folks: several field positions open this month with strong student fit. Check the Racoon Lab digest for the full list. 🦝 #ConservationJobs #Ecology #Fieldwork",
-        "Grant radar: a new biodiversity catalyst fund just opened with a close deadline. High fit for restoration + community engagement work. Worth a look. 💰 #GrantAlert #Biodiversity #ResearchFunding",
-        "Reading: a paper on knowledge co-production in human-dimensions of restoration scored 89% relevance this week. The lab is flagging it for journal club. 📚 #HumanDimensions #EcologyResearch",
-        "The Narwhal and Mongabay both dropped pieces this week on policy shifts affecting Great Lakes restoration. Worth reading alongside the science. 🏞️ #ConservationPolicy #GreatLakes #RestorationNews",
+        "New in restoration ecology: participatory planning with AI decision-support agents is showing real promise for community-led projects. The future of restoration might be collaborative by design. #RestorationEcology #ConservationScience #AI",
+        "Hiring alert for conservation folks: several field positions open this month with strong student fit. Check the Racoon Lab digest for the full list. #ConservationJobs #Ecology #Fieldwork",
+        "Grant radar: a new biodiversity catalyst fund just opened with a close deadline. High fit for restoration and community engagement work. Worth a look. #GrantAlert #Biodiversity #ResearchFunding",
+        "Reading: a paper on knowledge co-production in human-dimensions of restoration scored 89% relevance this week. The lab is flagging it for journal club. #HumanDimensions #EcologyResearch",
+        "The Narwhal and Mongabay both dropped pieces this week on policy shifts affecting Great Lakes restoration. Worth reading alongside the science. #ConservationPolicy #GreatLakes #RestorationNews",
     ]
 
 
@@ -154,15 +202,15 @@ def main() -> None:
 
     markdown = "\n".join(lines) + "\n"
 
-    # Generate Mastodon toots from the full digest
     if is_test_mode():
         mastodon_toots = sample_mastodon_toots()
     else:
         try:
-            mastodon_toots = generate_mastodon_toots(markdown)
+            mastodon_toots = generate_mastodon_toots(markdown, relevant_articles)
         except Exception as exc:
             print(f"Warning: Mastodon toot generation failed: {exc}", file=sys.stderr)
             mastodon_toots = []
+    mastodon_toots = ensure_article_toots(mastodon_toots, relevant_articles)
 
     if mastodon_toots:
         lines.append("")

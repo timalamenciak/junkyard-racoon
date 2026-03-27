@@ -400,14 +400,18 @@ def promote_pending_rss_state() -> None:
     state = load_json(state_path, default={}) or {}
     seen = set(state.get("seen_article_keys", []))
     pending = set(state.get("pending_article_keys", []))
-    if not pending:
+    seen_identities = set(state.get("seen_article_identities", []))
+    pending_identities = set(state.get("pending_article_identities", []))
+    if not pending and not pending_identities:
         return
     dump_json(
         state_path,
         {
             "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "seen_article_keys": sorted(seen | pending),
+            "seen_article_identities": sorted(seen_identities | pending_identities),
             "pending_article_keys": [],
+            "pending_article_identities": [],
         },
     )
 

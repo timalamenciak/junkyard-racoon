@@ -679,6 +679,18 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     .item-list a{{color:var(--accent);font-weight:700;text-decoration:none;}}
     .item-list a:hover{{text-decoration:underline;}}
     .item-list p{{margin:6px 0 0;color:var(--muted);font-size:0.92rem;}}
+    .todos-section{{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;}}
+    .todos-section h3{{margin:0 0 14px;font-size:1rem;}}
+    .todo-list{{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;}}
+    .todo-item{{background:#f6eedf;border:1px solid rgba(126,87,56,0.12);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;flex:1 1 280px;}}
+    .todo-badge{{display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.68rem;font-family:var(--mono);letter-spacing:0.07em;text-transform:uppercase;line-height:1.5;flex-shrink:0;}}
+    .todo-high{{background:rgba(210,143,44,0.18);color:#7a4c0a;border:1px solid rgba(210,143,44,0.3);}}
+    .todo-urgent{{background:rgba(180,40,40,0.12);color:#8b1a1a;border:1px solid rgba(180,40,40,0.22);}}
+    .todo-medium{{background:rgba(45,92,64,0.1);color:var(--accent);border:1px solid rgba(45,92,64,0.2);}}
+    .todo-low{{background:rgba(100,100,100,0.07);color:var(--muted);border:1px solid rgba(100,100,100,0.14);}}
+    .todo-task{{font-size:0.93rem;flex:1 1 200px;}}
+    .todo-project{{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}}
+    .todo-note{{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}}
     .meta{{color:var(--muted);font-size:0.9rem;}}
     .section-heading{{display:flex;align-items:center;justify-content:space-between;gap:12px;}}
     .section-tag{{padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:0.74rem;font-family:var(--mono);}}
@@ -721,6 +733,8 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
       .jobs-table tbody tr.hidden{{display:none;}}
       .jobs-table td{{display:grid;grid-template-columns:100px 1fr;gap:8px;padding:9px 11px;}}
       .jobs-table td::before{{content:attr(data-label);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}}
+      .todo-list{{flex-direction:column;}}
+      .todo-item{{flex:1 1 auto;}}
     }}
   </style>
 </head>

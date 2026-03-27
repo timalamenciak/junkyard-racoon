@@ -1,4 +1,19 @@
 lookback_hours: 48
+openalex:
+  enabled: true
+  lookback_days: 3
+  per_page: 50
+  keywords:
+    - restoration ecology
+    - ecological restoration
+    - biodiversity conservation
+    - community-based conservation
+    - knowledge co-production ecology
+    - human dimensions conservation
+    - conservation social science
+    - AI ecology
+    - machine learning conservation
+    - evidence synthesis ecology
 feeds:
   - name: Conservation Biology
     url: https://onlinelibrary.wiley.com/action/showFeed?jc=15231739&type=etoc&feed=rss
