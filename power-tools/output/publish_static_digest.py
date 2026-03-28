@@ -145,17 +145,27 @@ _GRANT_STATUS_CLASS = {
 }
 
 
-def render_item_list(items: list[dict], empty_text: str, score_key: str | None = None, action_key: str | None = None) -> str:
+def render_item_list(items: list[dict], empty_text: str, score_key: str | None = None, action_key: str | None = None, item_type: str | None = None) -> str:
     if not items:
         return f"<p class='empty'>{_clean(empty_text)}</p>"
     parts: list[str] = ["<ul class='item-list'>"]
     for item in items:
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
-        summary = _clean(item.get("llm_summary") or item.get("summary", ""))
         is_manual = bool(item.get("always_surface"))
+        if link:
+            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+        else:
+            title_html = f"<span>{title}</span>"
         meta: list[str] = []
-        if is_manual:
+        if item_type == "articles":
+            authors = _clean(item.get("authors", ""))
+            journal = _clean(item.get("journal_name", "") or item.get("feed", ""))
+            if authors:
+                meta.append(authors)
+            if journal:
+                meta.append(f"<em>{journal}</em>")
+        elif is_manual:
             status = str(item.get("status", "tracking")).lower()
             cls = _GRANT_STATUS_CLASS.get(status, "status-tracking")
             meta.append(f"<span class='grant-status {cls}'>{html.escape(status)}</span>")
@@ -163,24 +173,10 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
                 meta.append(f"<span class='grant-deadline'>due {_clean(item.get('deadline', ''))}</span>")
             if item.get("amount"):
                 meta.append(f"<span class='grant-amount'>{_clean(item.get('amount', ''))}</span>")
-        elif score_key and item.get(score_key) is not None:
-            try:
-                meta.append(f"<code>{int(float(item.get(score_key, 0)) * 100)}%</code>")
-            except Exception:
-                pass
-        if action_key and item.get(action_key):
-            meta.append(_clean(item.get(action_key, "")))
         parts.append("<li>")
-        if is_manual:
-            parts.append("<span class='manual-grant-marker'>&#x1F4CB; tracking</span> ")
-        if link:
-            parts.append(f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>")
-        else:
-            parts.append(f"<span>{title}</span>")
+        parts.append(title_html)
         if meta:
-            parts.append(f"<div class='meta'>{' &middot; '.join(meta)}</div>")
-        if summary:
-            parts.append(f"<p>{summary}</p>")
+            parts.append(f"<div class='item-meta'>{' &middot; '.join(meta)}</div>")
         parts.append("</li>")
     parts.append("</ul>")
     return "".join(parts)
@@ -357,13 +353,13 @@ def render_digest_section(digest: dict) -> str:
         "</div>"
         "<div class='digest-grid'>"
         "<div class='column-card'><h3>News</h3>"
-        + render_item_list(digest.get("relevant_news", []), "No relevant news items.", None, None)
+        + render_item_list(digest.get("relevant_news", []), "No relevant news items.", None, None, item_type="news")
         + "</div>"
         "<div class='column-card'><h3>Articles</h3>"
-        + render_item_list(digest.get("relevant_articles", []), "No high-relevance papers.", "relevance_score", "recommended_action")
+        + render_item_list(digest.get("relevant_articles", []), "No high-relevance papers.", "relevance_score", "recommended_action", item_type="articles")
         + "</div>"
         "<div class='column-card'><h3>Grants</h3>"
-        + render_item_list(digest.get("relevant_grants", []), "No high-fit grant opportunities.", "relevance_score", "next_step")
+        + render_item_list(digest.get("relevant_grants", []), "No high-fit grant opportunities.", "relevance_score", "next_step", item_type="grants")
         + "</div>"
         "</div>"
         + todos_html
@@ -459,15 +455,17 @@ _CSS = """
   .empty-cell{color:var(--muted);text-align:center;padding:24px;}
 
   /* ── Digest grid ── */
-  .digest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:16px;}
-  .column-card{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:16px;padding:16px;}
-  .column-card h3{margin:0 0 14px;font-size:1rem;}
-  .item-list{list-style:none;padding:0;margin:0;}
-  .item-list li{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);}
-  .item-list li:last-child{margin-bottom:0;border-bottom:none;padding-bottom:0;}
-  .item-list a,.jobs-table a{font-weight:700;text-decoration:none;}
-  .item-list a:hover,.jobs-table a:hover{text-decoration:underline;}
-  .item-list p{margin:8px 0 0;color:var(--muted);font-size:0.93rem;}
+  .digest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:16px;border-top:1px solid var(--line);}
+  .column-card{padding:16px 20px;border-right:1px solid var(--line);}
+  .column-card:last-child{border-right:none;}
+  .column-card h3{margin:0 0 10px;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}
+  .item-list{list-style:disc;padding:0 0 0 18px;margin:0;}
+  .item-list li{padding:2px 0 4px;margin:0;line-height:1.45;color:var(--ink);}
+  .item-list a{color:var(--ink);font-weight:normal;text-decoration:none;}
+  .item-list a:hover{color:var(--accent);text-decoration:underline;}
+  .jobs-table a{font-weight:700;text-decoration:none;}
+  .jobs-table a:hover{text-decoration:underline;}
+  .item-meta{font-size:0.78rem;color:var(--muted);margin:1px 0 4px;line-height:1.3;}
 
   /* ── Responsive ── */
   @media(max-width:1120px){
@@ -479,6 +477,8 @@ _CSS = """
     .layout{grid-template-columns:1fr;}
     .sidebar{position:relative;height:auto;}
     .digest-grid{grid-template-columns:1fr;}
+    .column-card{border-right:none;border-bottom:1px solid var(--line);}
+    .column-card:last-child{border-bottom:none;}
     .content{padding:16px;}
     .metrics{grid-template-columns:1fr 1fr;}
   }
@@ -722,15 +722,15 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     code{{font-family:var(--mono);font-size:0.82em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.18);border-radius:5px;padding:1px 5px;color:var(--accent);}}
     .panel{{background:#fffaf0;border:1px solid #d4c4aa;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 18px 40px rgba(44,31,18,0.08);}}
     .brand-kicker{{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#7e5738;}}
-    .digest-grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px;}}
-    .column-card{{background:#f6eedf;border:1px solid rgba(126,87,56,0.12);border-radius:16px;padding:16px;}}
-    .column-card h3{{margin:0 0 12px;font-size:1rem;}}
-    .item-list{{list-style:none;padding:0;margin:0;}}
-    .item-list li{{padding:0 0 14px;margin:0 0 14px;border-bottom:1px solid var(--line);}}
-    .item-list li:last-child{{border-bottom:none;margin-bottom:0;padding-bottom:0;}}
-    .item-list a{{color:var(--accent);font-weight:700;text-decoration:none;}}
-    .item-list a:hover{{text-decoration:underline;}}
-    .item-list p{{margin:6px 0 0;color:var(--muted);font-size:0.92rem;}}
+    .digest-grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:14px;border-top:1px solid var(--line);}}
+    .column-card{{padding:16px 20px;border-right:1px solid var(--line);}}
+    .column-card:last-child{{border-right:none;}}
+    .column-card h3{{margin:0 0 10px;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}}
+    .item-list{{list-style:disc;padding:0 0 0 18px;margin:0;}}
+    .item-list li{{padding:2px 0 4px;margin:0;line-height:1.45;color:var(--ink);}}
+    .item-list a{{color:var(--ink);font-weight:normal;text-decoration:none;}}
+    .item-list a:hover{{color:var(--accent);text-decoration:underline;}}
+    .item-meta{{font-size:0.78rem;color:var(--muted);margin:1px 0 4px;line-height:1.3;}}
     .todos-section{{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;}}
     .todos-section h3{{margin:0 0 14px;font-size:1rem;}}
     .todo-list{{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;}}
