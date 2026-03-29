@@ -1002,6 +1002,21 @@ def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
 """
 
 
+def _assert_site_dir_writable(site_dir: Path) -> None:
+    """Fail fast with an actionable message if the site directory is not writable."""
+    site_dir.mkdir(parents=True, exist_ok=True)
+    test_file = site_dir / ".write_test"
+    try:
+        test_file.write_text("ok", encoding="utf-8")
+        test_file.unlink()
+    except PermissionError:
+        raise SystemExit(
+            f"\nERROR: Cannot write to site directory: {site_dir}\n"
+            "The directory is owned by a different user. Fix it with:\n\n"
+            f"  sudo chown -R $(whoami):$(whoami) {site_dir}\n"
+        )
+
+
 def publish_site(site_dir: Path, deploy_dir: Path | None) -> None:
     if deploy_dir is None:
         return
@@ -1026,6 +1041,8 @@ def main() -> None:
     site_dir = Path(static_cfg.get("site_dir", OUTPUT_DIR / "static_digest_site"))
     deploy_dir_value = str(static_cfg.get("deploy_dir", "")).strip()
     deploy_dir = Path(deploy_dir_value) if deploy_dir_value else None
+
+    _assert_site_dir_writable(site_dir)
 
     lab_profile = load_yaml(CONFIGS_DIR / "lab_profile.yaml")
     job_threshold = float(lab_profile.get("job_relevance_threshold", 0.80))
