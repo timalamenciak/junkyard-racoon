@@ -1048,7 +1048,12 @@ def main() -> None:
         podcast_site_dir.mkdir(parents=True, exist_ok=True)
         for f in PODCAST_SRC_DIR.iterdir():
             if f.is_file():
-                shutil.copy2(f, podcast_site_dir / f.name)
+                dest = podcast_site_dir / f.name
+                try:
+                    dest.unlink(missing_ok=True)
+                    shutil.copy2(f, dest)
+                except OSError as exc:
+                    print(f"Warning: could not copy podcast file {f.name}: {exc}", file=sys.stderr)
         if (podcast_site_dir / "feed.xml").exists():
             podcast_feed_url = public_url.rstrip("/") + "/podcast/feed.xml"
 
