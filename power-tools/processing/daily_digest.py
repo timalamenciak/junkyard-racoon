@@ -114,14 +114,14 @@ def main() -> None:
     ensure_data_dirs()
     scored_articles = load_json(PROCESSING_DIR / "scored_articles.json", default={})
     scored_grants = load_json(PROCESSING_DIR / "scored_grants.json", default={})
+    scored_news = load_json(PROCESSING_DIR / "scored_news.json", default={})
     scored_jobs = load_json(PROCESSING_DIR / "scored_jobs.json", default={})
     todos = load_json(PROCESSING_DIR / "obsidian_todos.json", default={})
     publications = load_json(INGEST_DIR / "collaborator_publications.json", default={})
-    news = load_json(INGEST_DIR / "news_items.json", default={})
     jobs = load_json(INGEST_DIR / "job_openings.json", default={})
     date_str = datetime.date.today().isoformat()
 
-    relevant_news = news.get("relevant_items", [])[:10]
+    relevant_news = scored_news.get("relevant_items", [])[:10]
     relevant_articles = scored_articles.get("relevant_items", [])[:10]
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
     prioritized_todos = todos.get("items", [])[:20]

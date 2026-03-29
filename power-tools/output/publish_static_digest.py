@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 import html
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -17,6 +18,7 @@ from common.io_utils import CONFIGS_DIR, OUTPUT_DIR, STATE_DIR, dump_json, ensur
 
 STATE_PATH = STATE_DIR / "static_digest_site.json"
 PODCAST_STATE_PATH = STATE_DIR / "podcast_state.json"
+MASTODON_STATE_PATH = STATE_DIR / "mastodon_posted.json"
 PODCAST_SRC_DIR = OUTPUT_DIR / "podcast"
 
 MAX_HISTORY_DAYS = 60
@@ -321,6 +323,145 @@ def render_raccoon_badge() -> str:
 """
 
 
+def flatten_items(digests: list[dict], key: str) -> list[dict]:
+    """Flatten items from all digests under `key`, annotated with digest date. Deduplicates by link/title."""
+    result = []
+    seen: set[str] = set()
+    for digest in digests:
+        date = digest.get("date", "")
+        for item in digest.get(key, []):
+            if not isinstance(item, dict):
+                continue
+            link = str(item.get("link", "")).strip()
+            title = str(item.get("title", "")).strip().lower()
+            dedup_key = link or title
+            if dedup_key and dedup_key in seen:
+                continue
+            if dedup_key:
+                seen.add(dedup_key)
+            annotated = dict(item)
+            annotated["_digest_date"] = date
+            result.append(annotated)
+    return result
+
+
+def _tip(title_html: str, summary: str) -> str:
+    """Wrap title_html in a tooltip span if summary is non-empty."""
+    if not summary:
+        return title_html
+    tip_text = html.escape(summary[:300])
+    return f"<span class='tip'>{title_html}<span class='tip-text'>{tip_text}</span></span>"
+
+
+def render_news_table(items: list[dict]) -> str:
+    if not items:
+        return "<p class='empty'>No news items found.</p>"
+    rows = [
+        "<table class='digest-table'>"
+        "<thead><tr><th>Date</th><th>Title</th></tr></thead><tbody>"
+    ]
+    for item in items:
+        date = _clean(item.get("_digest_date", ""))
+        title = _clean(item.get("title", "Untitled"))
+        link = str(item.get("link", "")).strip()
+        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        if link:
+            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+        else:
+            title_html = f"<span>{title}</span>"
+        rows.append(f"<tr><td class='date-cell'>{date}</td><td>{_tip(title_html, summary)}</td></tr>")
+    rows.append("</tbody></table>")
+    return "".join(rows)
+
+
+def render_articles_table(items: list[dict]) -> str:
+    if not items:
+        return "<p class='empty'>No articles found.</p>"
+    rows = [
+        "<table class='digest-table'>"
+        "<thead><tr><th>Date</th><th>Title</th><th>Authors</th><th>Journal</th></tr></thead><tbody>"
+    ]
+    for item in items:
+        date = _clean(item.get("_digest_date", ""))
+        title = _clean(item.get("title", "Untitled"))
+        link = str(item.get("link", "")).strip()
+        authors = _clean(item.get("authors", ""))
+        journal = _clean(item.get("journal_name", "") or item.get("feed", ""))
+        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        if link:
+            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+        else:
+            title_html = f"<span>{title}</span>"
+        rows.append(
+            f"<tr><td class='date-cell'>{date}</td>"
+            f"<td>{_tip(title_html, summary)}</td>"
+            f"<td class='muted-cell'>{authors}</td>"
+            f"<td class='muted-cell'><em>{journal}</em></td></tr>"
+        )
+    rows.append("</tbody></table>")
+    return "".join(rows)
+
+
+def render_grants_table(items: list[dict]) -> str:
+    if not items:
+        return "<p class='empty'>No grant opportunities found.</p>"
+    rows = [
+        "<table class='digest-table'>"
+        "<thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Deadline</th><th>Amount</th></tr></thead><tbody>"
+    ]
+    for item in items:
+        date = _clean(item.get("_digest_date", ""))
+        title = _clean(item.get("title", "Untitled"))
+        link = str(item.get("link", "")).strip()
+        is_manual = bool(item.get("always_surface"))
+        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        if link:
+            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+        else:
+            title_html = f"<span>{title}</span>"
+        if is_manual:
+            status = str(item.get("status", "tracking")).lower()
+            cls = _GRANT_STATUS_CLASS.get(status, "status-tracking")
+            status_html = f"<span class='grant-status {cls}'>{html.escape(status)}</span>"
+        else:
+            status_html = ""
+        deadline = _clean(item.get("deadline", "") or item.get("application_deadline", ""))
+        amount = _clean(item.get("amount", ""))
+        rows.append(
+            f"<tr><td class='date-cell'>{date}</td>"
+            f"<td>{_tip(title_html, summary)}</td>"
+            f"<td>{status_html}</td>"
+            f"<td class='muted-cell'>{deadline}</td>"
+            f"<td class='muted-cell'>{amount}</td></tr>"
+        )
+    rows.append("</tbody></table>")
+    return "".join(rows)
+
+
+def render_toots_section(mastodon_state: dict, instance_url: str) -> str:
+    toots = mastodon_state.get("toots", [])
+    if not toots:
+        return ""
+    posted_date = _clean(mastodon_state.get("posted_date", ""))
+    post_ids = mastodon_state.get("post_ids", [])
+    parts = [
+        "<section id='toots' class='content-card'>",
+        "<div class='section-heading'><h2>Latest Toots</h2>",
+        f"<span class='section-tag'>{posted_date}</span></div>",
+        "<div class='toot-grid'>",
+    ]
+    for i, toot in enumerate(toots):
+        post_id = post_ids[i] if i < len(post_ids) else ""
+        toot_text = html.escape(str(toot)).replace("\n", "<br>")
+        permalink = ""
+        if instance_url and post_id:
+            toot_url = f"{instance_url.rstrip('/')}/@junkyard_racoon/{post_id}"
+            permalink = f"<a href='{html.escape(toot_url, quote=True)}' target='_blank' rel='noreferrer' class='toot-link'>view ↗</a>"
+        parts.append(f"<div class='toot-card'><p>{toot_text}</p>{permalink}</div>")
+    parts.append("</div></section>")
+    return "".join(parts)
+
+
 def render_metric_chips(digests: list[dict], jobs: list[dict]) -> str:
     recent = digests[:7]
     news_count = sum(len(item.get("relevant_news", [])) for item in recent)
@@ -510,6 +651,31 @@ _CSS = """
   .todo-project{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}
   .todo-note{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}
 
+  /* ── Content card (generic section wrapper) ── */
+  .content-card{background:rgba(255,250,240,0.92);border:1px solid rgba(126,87,56,0.18);border-radius:var(--radius);padding:26px;box-shadow:0 18px 44px rgba(44,31,18,0.08);margin-bottom:24px;}
+
+  /* ── Digest tables (news / articles / grants) ── */
+  .digest-table{width:100%;border-collapse:collapse;font-size:0.92rem;}
+  .digest-table th{text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);font-weight:normal;padding:6px 10px 8px;border-bottom:2px solid var(--line);}
+  .digest-table td{padding:7px 10px;border-bottom:1px solid rgba(212,196,170,0.4);vertical-align:top;}
+  .digest-table tbody tr:hover td{background:rgba(45,92,64,0.04);}
+  .digest-table a{color:var(--ink);text-decoration:none;}
+  .digest-table a:hover{color:var(--accent);text-decoration:underline;}
+  .date-cell{white-space:nowrap;color:var(--muted);font-size:0.8rem;font-family:var(--mono);width:100px;}
+  .muted-cell{color:var(--muted);font-size:0.85rem;}
+
+  /* ── Hover tooltip ── */
+  .tip{position:relative;display:inline;}
+  .tip .tip-text{display:none;position:absolute;left:0;top:calc(100% + 4px);background:#23262b;color:#f4efe6;padding:8px 12px;border-radius:8px;font-size:0.8rem;line-height:1.5;width:320px;max-width:80vw;white-space:normal;z-index:200;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,0.3);}
+  .tip:hover .tip-text{display:block;}
+
+  /* ── Mastodon toots ── */
+  .toot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:16px;}
+  .toot-card{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:14px;padding:14px 16px;font-size:0.9rem;line-height:1.55;}
+  .toot-card p{margin:0 0 8px;}
+  .toot-link{font-size:0.75rem;font-family:var(--mono);color:var(--muted);text-decoration:none;}
+  .toot-link:hover{color:var(--accent);}
+
   /* ── Manual grant badges ── */
   .manual-grant-marker{font-size:0.7rem;font-family:var(--mono);color:var(--scrap);margin-right:4px;}
   .grant-status,.grant-deadline,.grant-amount{display:inline-block;font-size:0.72rem;font-family:var(--mono);border-radius:999px;padding:2px 8px;line-height:1.5;}
@@ -638,21 +804,22 @@ def render_podcast_sidebar(episode_count: int, feed_url: str) -> str:
     )
 
 
-def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podcast_episode_count: int = 0) -> str:
+def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podcast_episode_count: int = 0, mastodon_state: dict | None = None, mastodon_instance_url: str = "") -> str:
     digests = state.get("digests", [])
     jobs = state.get("jobs", [])
     latest_date = _clean(digests[0]["date"]) if digests else "unknown"
     all_tags = collect_all_tags(jobs)
 
-    sidebar_links = []
-    for digest in digests:
-        date_str = _clean(digest.get("date", "unknown"))
-        sidebar_links.append(f"<li><a href='#{date_str}'>{date_str}</a></li>")
-    sidebar_links.append("<li><a href='#jobs'>Open Jobs</a></li>")
+    articles = flatten_items(digests, "relevant_articles")
+    news = flatten_items(digests, "relevant_news")
+    grants = flatten_items(digests, "relevant_grants")
+
     archive_links = []
     for digest in digests:
         date_str = _clean(digest.get("date", "unknown"))
         archive_links.append(f"<li><a href='{date_str}.html'>{date_str}</a></li>")
+
+    toots_html = render_toots_section(mastodon_state or {}, mastodon_instance_url)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -669,7 +836,13 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
       <h1>Lab Digest</h1>
       <p class="sidebar-meta">Last run: {latest_date}</p>
       <div class="nav-caption">Jump To</div>
-      <ul>{''.join(sidebar_links)}</ul>
+      <ul>
+        <li><a href="#toots">Latest Toots</a></li>
+        <li><a href="#articles">Articles</a></li>
+        <li><a href="#news">News</a></li>
+        <li><a href="#grants">Grants</a></li>
+        <li><a href="#jobs">Open Jobs</a></li>
+      </ul>
       <div class="nav-caption">Daily Pages</div>
       <ul>{''.join(archive_links)}</ul>
       {render_podcast_sidebar(podcast_episode_count, podcast_feed_url)}
@@ -681,13 +854,33 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
             <div class="brand-kicker">Field Notes, Salvaged Nightly</div>
             <h1>Daily Research Digest</h1>
             <p class="hero-lede">Rolling intelligence on news, articles, grants, and a continuously updated jobs board. Filtered for relevance. Built for the Racoon Lab.</p>
-            <p>Public URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
           </div>
           {render_raccoon_badge()}
         </div>
         <div class="metrics">{render_metric_chips(digests, jobs)}</div>
       </section>
-      {''.join(render_digest_section(digest) for digest in digests)}
+      {toots_html}
+      <section id="articles" class="content-card">
+        <div class="section-heading">
+          <h2>Articles</h2>
+          <span class="section-tag">{len(articles)} papers</span>
+        </div>
+        {render_articles_table(articles)}
+      </section>
+      <section id="news" class="content-card">
+        <div class="section-heading">
+          <h2>News</h2>
+          <span class="section-tag">{len(news)} items</span>
+        </div>
+        {render_news_table(news)}
+      </section>
+      <section id="grants" class="content-card">
+        <div class="section-heading">
+          <h2>Grants</h2>
+          <span class="section-tag">{len(grants)} opportunities</span>
+        </div>
+        {render_grants_table(grants)}
+      </section>
       <section id="jobs" class="jobs-card">
         <div class="section-heading">
           <h2>Open Jobs</h2>
@@ -859,9 +1052,12 @@ def main() -> None:
         if (podcast_site_dir / "feed.xml").exists():
             podcast_feed_url = public_url.rstrip("/") + "/podcast/feed.xml"
 
+    mastodon_state = load_json(MASTODON_STATE_PATH, default={}) or {}
+    mastodon_instance_url = os.getenv("MASTODON_INSTANCE_URL", "").strip()
+
     site_dir.mkdir(parents=True, exist_ok=True)
     (site_dir / "index.html").write_text(
-        render_index(state, public_url, podcast_feed_url, podcast_episode_count),
+        render_index(state, public_url, podcast_feed_url, podcast_episode_count, mastodon_state, mastodon_instance_url),
         encoding="utf-8",
     )
     for item in state["digests"]:

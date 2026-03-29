@@ -5,6 +5,7 @@ institution: Wilfrid Laurier University
 principal_investigator: Tim Alamenciak
 article_relevance_threshold: 0.75
 grant_relevance_threshold: 0.65
+news_relevance_threshold: 0.60
 job_relevance_threshold: 0.80
 research_interests:
   - AI, semantics, and machine learning applications in ecology and conservation biology
@@ -22,6 +23,11 @@ grant_priority_areas:
   - Human dimensions, knowledge mobilization, and community-engaged research
   - AI, data systems, and semantic tooling in ecology
   - Partnership-based research involving practitioners, communities, or Indigenous stewardship
+news_scoring_rules:
+  - Score highest for news directly about restoration ecology, conservation policy, biodiversity, or lab-adjacent research in Canada.
+  - Prefer stories with concrete policy, funding, or science implications for the lab's work.
+  - Down-rank general politics, economics, health, or social policy stories that only mention Canada incidentally.
+  - Down-rank opinion pieces, podcasts, and retrospectives unless directly relevant to lab themes.
 grant_scoring_rules:
   - Score highest when the opportunity plausibly fits the lab's size, discipline, and collaboration style.
   - Prefer grants that support partnerships, interdisciplinary work, graduate trainees, or knowledge mobilization.

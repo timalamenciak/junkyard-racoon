@@ -9,7 +9,9 @@
       "WebFetch(domain:sshrc-crsh.canada.ca)",
       "WebFetch(domain:nserc-crsng.canada.ca)",
       "WebFetch(domain:onlinelibrary.wiley.com)",
-      "WebFetch(domain:www.canada.ca)"
+      "WebFetch(domain:www.canada.ca)",
+      "Bash(python -c \"import output.publish_static_digest; print\\(''OK''\\)\")",
+      "Bash(python -c \"import output.publish_static_digest; import processing.score_news; print\\(''OK''\\)\")"
     ]
   }
 }
