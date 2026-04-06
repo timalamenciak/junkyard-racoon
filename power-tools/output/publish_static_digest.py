@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import email.utils
 import html
 import json
 import os
@@ -321,6 +322,62 @@ def render_raccoon_badge() -> str:
   <path d='M32 132c30 12 126 12 156 0' stroke='#2a6048' stroke-width='10' fill='none' stroke-linecap='round'/>
 </svg>
 """
+
+
+def render_rss_feed(state: dict, public_url: str) -> str:
+    """Render an RSS 2.0 feed with the 3 most recent grants, news, and articles."""
+    digests = state.get("digests", [])
+    news = flatten_items(digests, "relevant_news")[:3]
+    articles = flatten_items(digests, "relevant_articles")[:3]
+    grants = flatten_items(digests, "relevant_grants")[:3]
+
+    def _rss_date(date_str: str) -> str:
+        d = _parse_date(date_str)
+        if d is None:
+            return email.utils.formatdate(usegmt=True)
+        dt = datetime.datetime(d.year, d.month, d.day, tzinfo=datetime.timezone.utc)
+        return email.utils.format_datetime(dt)
+
+    def _item_xml(item: dict, category: str) -> str:
+        title = str(item.get("title", "Untitled")).strip()
+        link = str(item.get("link", "")).strip()
+        date_str = str(item.get("_digest_date", "")).strip()
+        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        title_esc = html.escape(title)
+        desc_esc = html.escape(summary) if summary else title_esc
+        pub_date = _rss_date(date_str)
+        guid_val = link if link else f"{public_url}#{category.lower()}-{title[:40]}"
+        link_elem = f"<link>{html.escape(link, quote=True)}</link>" if link else ""
+        return (
+            "<item>"
+            f"<title>{title_esc}</title>"
+            f"{link_elem}"
+            f"<description>{desc_esc}</description>"
+            f"<category>{html.escape(category)}</category>"
+            f"<pubDate>{pub_date}</pubDate>"
+            f"<guid isPermaLink=\"{'true' if link else 'false'}\">{html.escape(guid_val, quote=True)}</guid>"
+            "</item>"
+        )
+
+    items_xml = (
+        [_item_xml(i, "News") for i in news]
+        + [_item_xml(i, "Articles") for i in articles]
+        + [_item_xml(i, "Grants") for i in grants]
+    )
+    feed_url = public_url.rstrip("/") + "/feed.xml"
+    now = email.utils.formatdate(usegmt=True)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'
+        "<channel>"
+        "<title>Racoon Lab Research Digest</title>"
+        f"<link>{html.escape(public_url)}</link>"
+        "<description>Recent grants, news, and articles from the Racoon Lab daily digest.</description>"
+        f"<lastBuildDate>{now}</lastBuildDate>"
+        f'<atom:link href="{html.escape(feed_url, quote=True)}" rel="self" type="application/rss+xml"/>'
+        + "".join(items_xml)
+        + "</channel></rss>"
+    )
 
 
 def flatten_items(digests: list[dict], key: str) -> list[dict]:
@@ -821,12 +878,14 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
 
     toots_html = render_toots_section(mastodon_state or {}, mastodon_instance_url)
 
+    feed_url = public_url.rstrip("/") + "/feed.xml"
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest</title>
+  <link rel="alternate" type="application/rss+xml" title="Racoon Lab Research Digest" href="{html.escape(feed_url, quote=True)}">
   <style>{_CSS}</style>
 </head>
 <body>
@@ -842,6 +901,11 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
         <li><a href="#news">News</a></li>
         <li><a href="#grants">Grants</a></li>
         <li><a href="#jobs">Open Jobs</a></li>
+      </ul>
+      <div class="nav-caption">Feeds</div>
+      <ul>
+        <li><a href="{html.escape(feed_url, quote=True)}">RSS Feed</a></li>
+        <li style="color:#8aab96;font-size:0.75rem;font-family:var(--mono)">Recent grants, news &amp; articles</li>
       </ul>
       <div class="nav-caption">Daily Pages</div>
       <ul>{''.join(archive_links)}</ul>
@@ -1080,6 +1144,10 @@ def main() -> None:
     site_dir.mkdir(parents=True, exist_ok=True)
     (site_dir / "index.html").write_text(
         render_index(state, public_url, podcast_feed_url, podcast_episode_count, mastodon_state, mastodon_instance_url),
+        encoding="utf-8",
+    )
+    (site_dir / "feed.xml").write_text(
+        render_rss_feed(state, public_url),
         encoding="utf-8",
     )
     for item in state["digests"]:
