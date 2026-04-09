@@ -162,6 +162,31 @@ def load_email_grant_items() -> list[dict]:
     return items
 
 
+def build_funder_priority_index(config: dict) -> dict[str, dict]:
+    """Build a name → priority metadata lookup from the grants.yaml `funders` section."""
+    index: dict[str, dict] = {}
+    for funder in config.get("funders", []):
+        name = funder.get("name", "").strip().lower()
+        if name:
+            index[name] = {
+                "source_priority": funder.get("priority", "standard"),
+                "canada_eligible": funder.get("canada_eligible", None),
+                "research_fit_score": funder.get("research_fit_score", None),
+            }
+    return index
+
+
+def apply_source_priority(item: dict, funder_index: dict[str, dict]) -> dict:
+    """Attach source priority metadata to a grant item if the source matches a known funder."""
+    source_key = item.get("source", "").strip().lower()
+    match = funder_index.get(source_key)
+    if match:
+        item.update(match)
+    elif not item.get("source_priority"):
+        item["source_priority"] = "standard"
+    return item
+
+
 def main() -> None:
     ensure_data_dirs()
     if is_test_mode():
@@ -182,6 +207,7 @@ def main() -> None:
         return
 
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
+    funder_index = build_funder_priority_index(config)
     items: list[dict] = []
     seen_links = set()
     failed_sources: list[str] = []
@@ -202,21 +228,21 @@ def main() -> None:
             if not link or link in seen_links:
                 continue
             seen_links.add(link)
-            items.append(
-                {
-                    "source_type": "grant_rss",
-                    "source": source_name,
-                    "title": entry.get("title", "").strip(),
-                    "link": link,
-                    "summary": strip_html(entry.get("summary", entry.get("description", ""))),
-                    "published": parse_date(entry),
-                    "tags": source.get("tags", []),
-                }
-            )
+            item = {
+                "source_type": "grant_rss",
+                "source": source_name,
+                "title": entry.get("title", "").strip(),
+                "link": link,
+                "summary": strip_html(entry.get("summary", entry.get("description", ""))),
+                "published": parse_date(entry),
+                "tags": source.get("tags", []),
+            }
+            apply_source_priority(item, funder_index)
+            items.append(item)
 
     rss_count = len(items)
-    email_items = load_email_grant_items()
-    manual_items = load_manual_grant_items()
+    email_items = [apply_source_priority(i, funder_index) for i in load_email_grant_items()]
+    manual_items = [apply_source_priority(i, funder_index) for i in load_manual_grant_items()]
     items.extend(email_items)
     items.extend(manual_items)
     dump_json(

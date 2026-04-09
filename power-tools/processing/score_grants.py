@@ -15,6 +15,16 @@ from common.runtime import is_test_mode
 
 BATCH_SIZE = 10
 
+# Multipliers applied to LLM relevance scores based on source priority.
+# Applied after LLM scoring so the LLM still evaluates content fit;
+# priority acts as a strategic weight on top of content relevance.
+PRIORITY_MULTIPLIERS: dict[str, float] = {
+    "high": 1.20,
+    "medium": 1.05,
+    "standard": 1.00,
+    "low": 0.85,
+}
+
 
 def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     priority_areas = "\n".join(f"- {item}" for item in lab_profile.get("grant_priority_areas", []))
@@ -22,6 +32,11 @@ def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     lines = []
     for idx, grant in enumerate(grants):
         meta_parts = [f"Source: {grant.get('source', '')}"]
+        source_priority = grant.get("source_priority", "standard")
+        if source_priority and source_priority != "standard":
+            meta_parts.append(f"Source priority tier: {source_priority}")
+        if grant.get("canada_eligible") is not None:
+            meta_parts.append(f"Canada eligible: {grant.get('canada_eligible')}")
         if grant.get("program"):
             meta_parts.append(f"Program: {grant.get('program', '')}")
         if grant.get("amount"):
@@ -40,12 +55,28 @@ def build_prompt(grants: list[dict], lab_profile: dict) -> list[dict[str, str]]:
     system = (
         "You are triaging grant opportunities for an ecology and restoration lab.\n"
         "Score each grant from 0.0 to 1.0 based on strategic fit, likely eligibility, and urgency.\n"
+        "When a grant lists a 'Source priority tier' of high or medium, treat that funder as\n"
+        "strategically important: weight content fit more generously and flag it for attention\n"
+        "even when the specific call details are limited.\n"
         "Return only JSON as a list of objects with keys: index, score, summary, rationale, next_step.\n\n"
         f"Priority areas:\n{priority_areas}\n\n"
         f"Scoring rules:\n{scoring_rules}"
     )
     user = "Grant opportunities:\n\n" + "\n\n".join(lines)
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def apply_priority_multiplier(grants: list[dict]) -> None:
+    """Adjust relevance_score in-place using source_priority multipliers, capped at 1.0."""
+    for grant in grants:
+        raw_score = grant.get("relevance_score")
+        if raw_score is None:
+            continue
+        priority = grant.get("source_priority", "standard")
+        multiplier = PRIORITY_MULTIPLIERS.get(priority, 1.0)
+        grant["relevance_score"] = round(min(float(raw_score) * multiplier, 1.0), 4)
+        if multiplier != 1.0:
+            grant["priority_multiplier_applied"] = multiplier
 
 
 def score_grants_for_test_mode(grants: list[dict]) -> list[dict]:
@@ -107,6 +138,8 @@ def main() -> None:
         grants = score_grants_for_test_mode(grants)
     else:
         score_grants_llm(grants, lab_profile)
+
+    apply_priority_multiplier(grants)
 
     threshold = float(lab_profile.get("grant_relevance_threshold", 0.65))
     relevant = [

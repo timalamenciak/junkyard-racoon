@@ -1,67 +1,2759 @@
 # NSERC, SSHRC, and CFI retired their RSS feeds in 2025 when migrating to canada.ca.
 # No replacement RSS feeds exist for these sources as of March 2026.
 # Add new RSS sources below when available.
+#
+# The `funders` section (below the RSS sources) is generated from newfunders.yaml.
+# Each entry includes `grants_url` (the listing page where calls are announced) and
+# `homepage` (the org root), plus priority and eligibility metadata used by the
+# scoring pipeline.
 sources:
-  # --- Canadian / Canada-relevant funding aggregators ---
-  - name: Research Professional (Canada funding calls)
-    url: https://www.researchprofessionalnews.com/rss/funding/
-    tags: [grants, canada, research]
-    max_items: 40
-
-  - name: University Affairs – Research & Funding
-    url: https://www.universityaffairs.ca/category/research/rss/
-    tags: [grants, canada, academia]
-    max_items: 40
-
-  # --- International but highly relevant to Canadian ecologists ---
-  - name: Horizon Europe – Environment Calls (CORDIS)
-    url: https://cordis.europa.eu/search/en?q=contenttype%3D'call'%20AND%20(programme%2Fcode%3D'HORIZON')&format=rss
-    tags: [grants, environment, international]
-    max_items: 40
-
-  - name: NIH Funding Opportunities (Environmental Health)
-    url: https://grants.nih.gov/grants/guide/rss/PA.xml
-    tags: [grants, health, environment]
-    max_items: 40
-
-  - name: Grants.gov (Environment & Natural Resources)
-    url: https://www.grants.gov/rss.xml
-    tags: [grants, environment]
-    max_items: 40
-
-  # --- Foundations & NGOs (often fund ecology / conservation) ---
-  - name: Belmont Forum Opportunities
-    url: https://belmontforum.org/news/feed/
-    tags: [grants, climate, international]
-    max_items: 40
-
-  - name: Gordon and Betty Moore Foundation – News
-    url: https://www.moore.org/rss
-    tags: [grants, conservation]
-    max_items: 40
-
-  - name: Packard Foundation – Science & Conservation
-    url: https://www.packard.org/insights/feed/
-    tags: [grants, conservation]
-    max_items: 40
-
-  - name: Wildlife Conservation Society – Funding/News
-    url: https://www.wcs.org/rss
-    tags: [grants, conservation]
-    max_items: 40
-
-  # --- Canadian workaround layer (indirect signals) ---
-  - name: Mitacs Opportunities & News
-    url: https://www.mitacs.ca/en/newsroom/rss.xml
-    tags: [grants, canada, training]
-    max_items: 40
-
-  - name: Genome Canada News (Funding Announcements)
-    url: https://www.genomecanada.ca/en/rss.xml
-    tags: [grants, canada]
-    max_items: 40
-
-  - name: Environment and Climate Change Canada News
-    url: https://www.canada.ca/en/environment-climate-change/news/rss.xml
-    tags: [policy, canada, grants]
-    max_items: 40
+- name: Research Professional (Canada funding calls)
+  url: https://www.researchprofessionalnews.com/rss/funding/
+  tags:
+  - grants
+  - canada
+  - research
+  max_items: 40
+- name: University Affairs – Research & Funding
+  url: https://www.universityaffairs.ca/category/research/rss/
+  tags:
+  - grants
+  - canada
+  - academia
+  max_items: 40
+- name: Horizon Europe – Environment Calls (CORDIS)
+  url: https://cordis.europa.eu/search/en?q=contenttype%3D'call'%20AND%20(programme%2Fcode%3D'HORIZON')&format=rss
+  tags:
+  - grants
+  - environment
+  - international
+  max_items: 40
+- name: NIH Funding Opportunities (Environmental Health)
+  url: https://grants.nih.gov/grants/guide/rss/PA.xml
+  tags:
+  - grants
+  - health
+  - environment
+  max_items: 40
+- name: Grants.gov (Environment & Natural Resources)
+  url: https://www.grants.gov/rss.xml
+  tags:
+  - grants
+  - environment
+  max_items: 40
+- name: Belmont Forum Opportunities
+  url: https://belmontforum.org/news/feed/
+  tags:
+  - grants
+  - climate
+  - international
+  max_items: 40
+- name: Gordon and Betty Moore Foundation – News
+  url: https://www.moore.org/rss
+  tags:
+  - grants
+  - conservation
+  max_items: 40
+- name: Packard Foundation – Science & Conservation
+  url: https://www.packard.org/insights/feed/
+  tags:
+  - grants
+  - conservation
+  max_items: 40
+- name: Wildlife Conservation Society – Funding/News
+  url: https://www.wcs.org/rss
+  tags:
+  - grants
+  - conservation
+  max_items: 40
+- name: Mitacs Opportunities & News
+  url: https://www.mitacs.ca/en/newsroom/rss.xml
+  tags:
+  - grants
+  - canada
+  - training
+  max_items: 40
+- name: Genome Canada News (Funding Announcements)
+  url: https://www.genomecanada.ca/en/rss.xml
+  tags:
+  - grants
+  - canada
+  max_items: 40
+- name: Environment and Climate Change Canada News
+  url: https://www.canada.ca/en/environment-climate-change/news/rss.xml
+  tags:
+  - policy
+  - canada
+  - grants
+  max_items: 40
+funders:
+- name: Natural Sciences and Engineering Research Council of Canada
+  grants_url: https://www.nserc-crsng.gc.ca/funding-financement/index_eng.asp
+  homepage: https://www.nserc-crsng.gc.ca
+  priority: high
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - priority
+  - canada-eligible
+  notes: Excellent candidate for NSERC Discovery Grants or ECR-focused programs. Canadian
+    eligibility is certain, research fit is strong, and early faculty stage is well-supported.
+    Monitor for specific program openings and deadlines.
+- name: Canada Research Chairs
+  grants_url: https://www.chairs-chaires.gc.ca/program-programme/overview-apercu-eng.aspx
+  homepage: https://www.chairs-chaires.gc.ca/
+  priority: high
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - priority
+  - canada-eligible
+  notes: Excellent fit for this applicant's career stage and research profile. CRC
+    Tier 2 is designed for early-career faculty; the applicant should apply upon securing
+    a tenure-track position. Strong interdisciplinary credentials and applied conservation
+    impact will be competitive.
+- name: National Geographic Society
+  grants_url: https://www.nationalgeographic.org/funding-opportunities/
+  homepage: https://www.nationalgeographic.org
+  priority: high
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - priority
+  - canada-eligible
+  notes: Strong fit for National Geographic Society funding. Canadian eligibility
+    is clear, research in prairie conservation and ecological restoration aligns well
+    with NGS priorities, and career stage is appropriate. Monitor for specific grant
+    program openings (e.g., Early Career Grants, Conservation Trust).
+  deadline_hint: No active call deadline visible in truncated page content; visit
+    nationalgeographic.org/society/grants-and-investments for current opportunities.
+- name: National Socio-Environmental Synthesis Center
+  grants_url: https://www.sesync.org/opportunities
+  homepage: https://www.sesync.org/
+  priority: high
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 5
+  tags:
+  - funding
+  - ecology
+  - priority
+  - canada-eligible
+  notes: Strong strategic fit for applicant's profile and career transition. SESYNC
+    synthesis projects and working groups directly support interdisciplinary socio-environmental
+    research with knowledge mobilization focus. Monitor for open calls and consider
+    proposal alignment with grassland/prairie conservation as case study for synthesis
+    work.
+- name: Natural Environment Research Council
+  grants_url: https://www.ukri.org/councils/nerc/funding/
+  homepage: https://www.ukri.org/councils/nerc/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for NERC's environmental and restoration ecology scope,
+    but Canadian eligibility uncertain without direct institutional partnerships or
+    collaborative funding schemes. Monitor for specific calls targeting early-career
+    researchers or international collaborations.
+- name: Biotechnology and Biological Sciences Research Council
+  grants_url: https://www.ukri.org/councils/bbsrc/funding/
+  homepage: https://www.ukri.org/councils/bbsrc/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for BBSRC calls that explicitly welcome international collaborators
+    or joint NSERC-BBSRC schemes. Research fit is moderate—ecology and conservation
+    align well, but the AI and knowledge mobilization components may not be central
+    to BBSRC priorities. Verify eligibility on a per-call basis before investing effort.
+- name: Nederlandse Organisatie voor Wetenschappelijk Onderzoek
+  grants_url: https://www.nwo.nl/en/funding
+  homepage: https://www.nwo.nl/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: NWO could be a good fit for the applicant's interdisciplinary research combining
+    ecology, AI, and social science, particularly through international collaboration
+    schemes. However, eligibility and career-stage fit depend strongly on the specific
+    funding call, which was not accessible. Monitor NWO's international calls and
+    bilateral Canada-Netherlands research partnerships.
+- name: Japan Society for the Promotion of Science
+  grants_url: https://www.jsps.go.jp/english/e-grants/index.html
+  homepage: https://www.jsps.go.jp/english/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor JSPS programs if the applicant plans collaborative research involving
+    Japanese institutions or considers a postdoctoral fellowship in Japan. Direct
+    KAKENHI eligibility for Canadian-based researchers is unclear; the applicant should
+    verify eligibility and explore JSPS bilateral or international collaboration schemes
+    before investing application effort.
+  deadline_hint: Page references multiple program types (KAKENHI, bilateral programs,
+    international fellowships) but provides no specific deadline dates or open call
+    status. Link to 'How to apply' and 'Handbook for Researchers' suggests detailed
+    guidance exists elsewhere.
+- name: Biological and Environmental Research
+  grants_url: https://ber.science.energy.gov/funding
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for BER's environmental restoration and systems-level focus,
+    but Canadian eligibility constraints and uncertainty about active calls warrant
+    caution. Monitor for specific program announcements and confirm Canadian/institutional
+    eligibility before investing effort.
+- name: Austrian Science Fund
+  grants_url: https://www.fwf.ac.at/en/research-funding
+  homepage: https://www.fwf.ac.at
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for future calls, particularly START Prize or international collaboration
+    programs if FWF opens them. Strong ecology background fits FWF scope, but North
+    American focus and interdisciplinary AI methods may be secondary priorities; Canadian
+    eligibility likely requires EEA partnership.
+- name: Norges Forskningsråd
+  grants_url: https://www.forskningsradet.no/en/funding-for-research/
+  homepage: https://www.forskningsradet.no/en/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder for collaborative opportunities, particularly if the
+    applicant partners with Norwegian institutions on ecological restoration or grassland
+    conservation. Direct eligibility and research fit are uncertain without access
+    to active funding calls; investigate specific NRC programmes for early-career
+    researchers and international collaboration.
+- name: Division of Environmental Biology
+  grants_url: https://www.nsf.gov/bio/deb/solicitations.jsp
+  homepage: https://www.nsf.gov/bio/deb/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Solid research fit with DEB's scope, but NSF eligibility for Canadian-based
+    applicants requires verification of specific program requirements. Monitor for
+    explicit calls allowing Canadian institutions or international partnerships.
+- name: Deutsches Zentrum für integrative Biodiversitätsforschung Halle-Jena-Leipzig
+  grants_url: https://www.idiv.de/en/funding.html
+  homepage: https://www.idiv.de
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit with integrative biodiversity center, but Canadian eligibility
+    uncertain and likely requires collaboration with German/European partner. Monitor
+    for international call mechanisms or bilateral partnership opportunities.
+- name: Gordon and Betty Moore Foundation
+  grants_url: https://www.moore.org/grants-and-fellowships
+  homepage: https://www.moore.org
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for specific RFPs in environmental conservation or science programs,
+    particularly if foundation launches AI-for-conservation initiatives. Applicant's
+    Canadian location and postdoctoral status require verification of eligibility
+    before full application preparation.
+- name: Wellcome Trust
+  grants_url: https://wellcome.org/funding
+  homepage: https://wellcome.org
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor Wellcome Trust calls relevant to environmental health, conservation,
+    or interdisciplinary science, but this applicant's profile (ecology + AI + social
+    systems) is not a natural fit for Wellcome's traditional biomedical focus. Check
+    for specific environmental health or conservation-focused calls before investing
+    application effort.
+- name: H2020 Marie Skłodowska-Curie Actions
+  grants_url: https://ec.europa.eu/research/participants/portal/desktop/en/opportunities/h2020/index.html
+  homepage: https://ec.europa.eu/research/mariecurieactions/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: The applicant may be eligible for MSCA-PF if applying while still postdoctoral,
+    but the available page content does not detail specific calls, deadlines, or research
+    priority areas. Recommend checking the official MSCA portal for active calls and
+    confirming host institution eligibility (likely requires EU/associated country
+    affiliation).
+- name: Villum Fonden
+  grants_url: https://www.villumfonden.dk/en/calls-for-proposals
+  homepage: https://www.villumfonden.dk/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this opportunity. The applicant's ecological restoration and grassland
+    conservation work fits Villum Fonden's environmental research scope, but the heavy
+    emphasis on AI and translational aspects may not align with the foundation's typical
+    research priorities. Worth tracking for future calls.
+- name: Directorate for Biological Sciences
+  grants_url: https://www.nsf.gov/funding/opportunities.jsp
+  homepage: https://www.nsf.gov/bio/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for ecological restoration and conservation work, with
+    eligible career stage. However, applicant should verify program-specific eligibility
+    rules and whether Canadian applicants require US institutional affiliation or
+    collaboration. Monitor for CAREER or relevant core DBS solicitations.
+- name: Alexander von Humboldt-Stiftung
+  grants_url: https://www.humboldt-foundation.de/en/apply/programmes-and-calls
+  homepage: https://www.humboldt-foundation.de
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for active calls. The applicant's interdisciplinary profile and early-career
+    stage fit Humboldt's scope, but the applied/translational focus and Canadian base
+    (not requiring Germany placement) may reduce competitiveness relative to researchers
+    seeking extended German collaboration.
+- name: Agropolis Fondation
+  grants_url: https://www.agropolis.fr/appels-a-projets
+  homepage: https://www.agropolis.fr/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Strong research thematic fit for agricultural/ecological restoration focus,
+    but Canadian eligibility and career stage fit remain uncertain without page access.
+    Recommend verifying partnership/eligibility requirements and checking for active
+    calls before investing application effort.
+- name: SystemsX.ch
+  grants_url: https://www.systemsx.ch/calls/
+  homepage: https://www.systemsx.ch/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder for future calls if the applicant secures a tenure-track
+    position in Canada; the research fit is strong for systems-level ecology and AI
+    integration, but Canadian eligibility and career-stage fit require confirmation
+    of specific call requirements and partnership rules.
+- name: Royal Society
+  grants_url: https://royalsociety.org/grants-schemes-awards/
+  homepage: https://royalsociety.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder. The applicant is likely eligible as an overseas early-career
+    researcher, but Royal Society prioritizes UK-based science. Research fit is partial—ecological
+    restoration and interdisciplinary work have merit, but the funder's emphasis on
+    fundamental discovery and UK community may not perfectly align with the applicant's
+    translational/applied restoration focus.
+  deadline_hint: Short Industry Fellowship closing 28 May 2026 visible; other grants
+    listed but specific deadlines require accessing full grants portal.
+- name: Vrije Universiteit Brussel
+  grants_url: https://www.vub.be/en/research-funding
+  homepage: https://www.vub.be/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder if an active international or collaborative research
+    call opens; the applicant's interdisciplinary profile and rigorous methods are
+    potentially attractive to a research-intensive European institution, but Canadian
+    eligibility and research geographic fit require verification of specific call
+    documents.
+- name: David and Lucile Packard Foundation
+  grants_url: https://www.packard.org/what-we-fund/open-calls/
+  homepage: https://www.packard.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Solid research alignment with Packard's conservation mission, particularly
+    around grassland restoration and landowner engagement. However, applicant should
+    verify whether specific Packard program (e.g., Conservation and Science) has an
+    open call and confirm Canadian institution eligibility in current funding guidelines,
+    as foundation priorities and geographic focus can shift.
+- name: Alfred P. Sloan Foundation
+  grants_url: https://sloan.org/grants/apply
+  homepage: https://sloan.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor Sloan Foundation calls, particularly those focused on computational
+    methods, research tools, or science infrastructure. The applicant's AI and evidence
+    synthesis expertise is a stronger fit than the ecological application domain alone.
+- name: Leibniz-Gemeinschaft
+  grants_url: https://www.leibniz-gemeinschaft.de/en/funding/
+  homepage: https://www.leibniz-gemeinschaft.de
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for open calls, particularly those emphasizing ecology, conservation,
+    or social-ecological systems with international participation. The applicant's
+    strong interdisciplinary profile and Canadian affiliation are assets, but lead
+    applicant eligibility and AI/computational method acceptance require clarification
+    of specific call requirements.
+- name: Social Sciences and Humanities Research Council of Canada
+  grants_url: https://www.sshrc-crsh.gc.ca/funding-financement/funding_opportunities-possibilites_de_financement/index-eng.aspx
+  homepage: https://www.sshrc-crsh.gc.ca
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor SSHRC funding streams for knowledge mobilization and early-career
+    support; the applicant's social-ecological and community engagement focus is relevant,
+    but may need to emphasize social science dimensions over AI/computational methods
+    to maximize fit with SSHRC's humanities and social sciences mandate.
+- name: UK Research and Innovation
+  grants_url: https://www.ukri.org/funding/
+  homepage: https://www.ukri.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor UKRI opportunities, particularly NERC and ESRC open calls, for potential
+    fit with ecological restoration and translational research themes. Applicant should
+    verify Canadian eligibility on specific schemes and consider UK collaborators
+    to strengthen competitiveness.
+- name: Office of International Science and Engineering
+  grants_url: https://www.nsf.gov/funding/
+  homepage: https://www.nsf.gov/oise/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor OISE solicitations for international collaboration opportunities
+    that could position the applicant's ecological restoration work within a cross-border
+    comparative framework. Direct eligibility and fit depend on specific open calls
+    and whether research can be framed as international collaboration rather than
+    domestic Canadian work.
+- name: Helsingin Yliopisto
+  grants_url: https://www.helsinki.fi/en/research/research-funding
+  homepage: https://www.helsinki.fi/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for specific calls from University of Helsinki or Finnish funders
+    they administer. The applicant's ecological restoration work has some thematic
+    alignment with Finnish research priorities, but this appears to be a services
+    hub rather than an active opportunity. Verify eligibility and specific research
+    scope alignment when a targeted call is identified.
+- name: Michigan State University
+  grants_url: https://www.msu.edu
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Moderate fit for applicant's ecological restoration and grassland conservation
+    work with strong institutional alignment, but Canadian eligibility and specific
+    program scope cannot be confirmed without access to the funding page. Monitor
+    for open calls and verify eligibility requirements.
+- name: Wellcome
+  grants_url: https://wellcome.org/grant-funding
+  homepage: https://wellcome.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Wellcome is geographically eligible and supports the applicant's career stage,
+    but research fit is moderate. The funder's health and wellbeing mandate may not
+    prioritize the applicant's ecological restoration focus unless framed through
+    a health/climate lens. Worth monitoring for specific calls in Climate and Health
+    that could accommodate translational ecology and knowledge mobilization work.
+  deadline_hint: Page content is navigation/overview only; no specific open calls
+    or deadlines visible. Applicant should check 'Find a funding opportunity' section
+    on Wellcome's platform for active schemes.
+- name: Ontario Ministry of Research, Innovation and Science
+  grants_url: https://www.ontario.ca/page/ministry-colleges-and-universities
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: The applicant is eligible as a Canadian researcher, but should verify that
+    specific MRIS programs (likely Early Researcher Award or similar) support the
+    postdoc-to-faculty transition and that Ontario-based research directions align
+    with available calls. Monitor for program-specific openings that match interdisciplinary,
+    applied ecology work.
+- name: University of Southampton
+  grants_url: https://www.southampton.ac.uk/research/funding/
+  homepage: https://www.southampton.ac.uk
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good thematic fit for an interdisciplinary restoration and knowledge mobilization
+    researcher, but eligibility depends on specific scheme rules (some UK schemes
+    restrict to UK institutions). Applicant should verify eligibility before investing
+    significant effort; monitor for calls aligned with translational ecology or AI-evidence
+    synthesis.
+- name: Lunds Universitet
+  grants_url: https://www.lu.se/en/research/research-funding
+  homepage: https://www.lu.se
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder if an open call appears that explicitly welcomes Canadian
+    researchers or international collaborators. The applicant's interdisciplinary
+    ecology and restoration work has reasonable fit with a major research university,
+    but Canadian eligibility and career-stage fit require verification of the specific
+    funding call.
+- name: PADI Foundation
+  grants_url: https://www.padifoundation.org/grants
+  homepage: https://www.padifoundation.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Applicant's ecological restoration and social-ecological systems work has
+    reasonable alignment with PADI's sustainability mission, but without access to
+    full funding guidelines, confidence is moderate. Recommend verifying eligibility
+    criteria and climate/sustainability emphasis before investing application effort.
+- name: Horizon 2020
+  grants_url: https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-search
+  homepage: https://ec.europa.eu/programmes/horizon2020/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor Horizon 2020 for open calls matching the applicant's interdisciplinary
+    profile, particularly those in circular economy, biodiversity, or AI for evidence
+    synthesis. Eligibility is likely, but the provided page lacks substantive information
+    about active calls, deadlines, or research scope.
+- name: Eidgenössische Technische Hochschule Zürich
+  grants_url: https://www.ethz.ch/en/research/research-funding.html
+  homepage: https://www.ethz.ch
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: ETH Zürich is a prestigious funder with methodological alignment (AI, causal
+    inference, systems approaches) but unclear topical fit for ecological restoration
+    and social-ecological systems work. Recommend checking the specific call for eligibility,
+    career stage suitability, and thematic scope before investing effort.
+- name: University of Melbourne
+  grants_url: https://research.unimelb.edu.au/grants-and-funding
+  homepage: https://www.unimelb.edu.au
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for specific calls. University of Melbourne may offer relevant funding
+    for the applicant's interdisciplinary ecological and AI work, but eligibility
+    (especially for Canadians), career stage fit, and thematic alignment require verification
+    of actual open calls and program guidelines.
+- name: Griffith University
+  grants_url: https://research.griffith.edu.au/funding
+  homepage: https://www.griffith.edu.au/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for ecological restoration and AI-enabled methods, but
+    Canadian eligibility and career-stage fit are uncertain without detailed funder
+    guidelines. Recommend checking Griffith's specific eligibility criteria and whether
+    Canadian institutions can participate as lead or partner institutions before investing
+    application effort.
+- name: Fondation pour la Recherche sur la Biodiversite
+  grants_url: https://www.fondationbiodiversite.fr/appels-a-projets/
+  homepage: https://www.fondationbiodiversite.fr/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for biodiversity and ecological restoration focus, but
+    Canadian eligibility is unclear and this appears to be a 2022 call announcement
+    (no active deadline visible). Monitor for current FRB open calls and clarify whether
+    Canadians can apply as independent PIs or only as international partners.
+  deadline_hint: Page dated 2022-12-14; no active deadline indicated in truncated
+    content. Appears to be an announcement of past selections rather than a current
+    call.
+- name: Canada Foundation for Innovation
+  grants_url: https://www.innovation.ca/funding-opportunities
+  homepage: https://www.innovation.ca/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: CFI is a strong match for Canadian eligibility and career stage, but applicant
+    should verify that their research has significant infrastructure requirements
+    (equipment, facilities, data platforms, or computational systems) rather than
+    primarily human-subjects fieldwork or conceptual research. Monitor for CFI's next
+    major competition cycle.
+- name: Biodiversa+
+  grants_url: https://www.biodiversa.org/calls-for-proposals
+  homepage: https://www.biodiversa.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor Biodiversa+ for relevant calls in ecological restoration and biodiversity
+    conservation that match the applicant's expertise. Verify Canadian eligibility
+    and career stage requirements against specific call text before investing application
+    effort. International partnership or bilateral funding mechanism with Canadian
+    institution may enable participation.
+- name: Division of Emerging Frontiers
+  grants_url: https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=505135
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research alignment with DEF's interdisciplinary scope, but Canadian
+    institutional affiliation may restrict direct eligibility depending on the specific
+    solicitation. Monitor for calls explicitly open to international institutions
+    or collaborative arrangements with US partners.
+- name: University of Kentucky
+  grants_url: https://www.uky.edu/research/funding-opportunities
+  homepage: https://www.uky.edu/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: University of Kentucky may have relevant research funding for ecological
+    restoration and conservation, but without seeing specific open calls, program
+    scope, or eligibility criteria, this warrants monitoring rather than immediate
+    pursuit. The fit is moderate—ecology aligns but the heavy AI and translational
+    methods emphasis may not be prioritized.
+- name: University of Miami
+  grants_url: https://research.miami.edu/research-support/funding-opportunities/
+  homepage: https://www.miami.edu/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this opportunity but verify eligibility and active calls on UM's
+    website. The applicant's interdisciplinary work and Canadian location are likely
+    acceptable, but research fit is moderate and career-stage fit is unclear without
+    program-specific details.
+- name: Division of Integrative Organismal Systems
+  grants_url: https://www.nsf.gov/funding/pgm_summ.jsp?org=IOS&sel_org=IOS
+  homepage: https://www.nsf.gov/bio/ios/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for specific NSF-IOS funding calls that emphasize ecology and restoration;
+    the applicant's organismal ecology work has some fit, but Canadian institutional
+    eligibility is unclear without a live program announcement. If a specific RFP
+    becomes available, verify Canadian eligibility and international collaboration
+    terms.
+- name: Dalhousie University
+  grants_url: https://www.dal.ca/
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Dalhousie is a strong Canadian research institution with thematic alignment
+    to the applicant's work (sustainability, AI, social responsibility), but this
+    page lacks specifics on active funding opportunities, eligibility criteria, and
+    deadlines. Monitor Dalhousie's research funding portal and strategic clusters
+    for postdoctoral or faculty start-up programs matching the applicant's profile.
+- name: Strategic Environmental Research and Development Program
+  grants_url: https://www.serdp-estcp.org/Funding-Opportunities
+  homepage: https://www.serdp-estcp.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good research fit for ecological restoration focus, but US federal agency
+    origin raises eligibility questions for Canadian-only applications. Applicant
+    should verify Canadian institutional eligibility and explore whether SERDP accepts
+    Canadian partners in collaborative proposals with US institutions.
+- name: San Diego Zoo Institute for Conservation Research
+  grants_url: https://www.sdzwa.org/conservation-research
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Good thematic fit for conservation-focused funder, but Canadian eligibility
+    uncertain without confirmed funding page. Worth monitoring for open calls and
+    verifying institutional eligibility before investing significant effort.
+- name: Consortium of International Agricultural Research Centers
+  grants_url: https://www.cgiar.org/funding/
+  homepage: https://www.cgiar.org
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder for specific calls aligned with ecological restoration
+    or grassland management in relevant geographies. The applicant's interdisciplinary
+    methods and knowledge mobilization focus are assets, but CGIAR's development-oriented
+    agricultural mission may limit direct fit for Canadian prairie work unless positioned
+    within international food security or climate adaptation contexts.
+- name: Research Executive Agency
+  grants_url: https://www.rea.ec.europa.eu
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for open calls aligned with EU Horizon Europe environmental or digital
+    innovation priorities. Canadian eligibility is probable but not certain; research
+    fit is moderate, strongest for ecological restoration and conservation aspects
+    rather than the AI/methodological innovation angles.
+- name: University of Michigan
+  grants_url: https://research.umich.edu/funding-opportunities/
+  homepage: https://www.umich.edu
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Potentially a good fit given the applicant's interdisciplinary profile and
+    University of Michigan's likely research scope, but eligibility and active opportunities
+    cannot be confirmed without access to the funding page. Recommend checking funder
+    website directly for current calls, eligibility criteria, and whether Canadian
+    researchers are explicitly welcomed.
+- name: Directorate-General for Research and Innovation
+  grants_url: https://research-and-innovation.ec.europa.eu
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor this funder for calls aligned with ecological restoration and AI-assisted
+    evidence synthesis, but the applicant must confirm Canadian eligibility and relevance
+    for specific calls when they open. The page provided is only a language-selection
+    interface; detailed program criteria are not visible.
+- name: Rolex
+  grants_url: https://www.rolex.com/
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for active calls. The applicant's conservation and landowner engagement
+    work fits Rolex's mission, but the research profile is more academic/evidence-synthesis
+    oriented than the hands-on, implementable innovation Rolex typically prioritizes.
+    Strong fit if the applicant can frame work around concrete field outcomes and
+    social impact.
+- name: John Templeton Foundation
+  grants_url: https://www.templeton.org/grant-opportunities
+  homepage: https://www.templeton.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for relevant JTF calls, particularly those addressing complexity
+    in natural systems, evidence synthesis methodology, or AI/knowledge integration.
+    The applied conservation focus may limit fit compared to more fundamental research
+    programs, so review specific RFPs carefully before investing effort.
+- name: Wageningen University and Research
+  grants_url: https://www.wur.nl/en/research-facilities/funding-finder.htm
+  homepage: https://www.wur.nl/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Wageningen is a strong fit for the applicant's ecological restoration and
+    social-ecological systems work, with growing interest in AI-assisted methods.
+    However, without access to the specific call (country eligibility, budget, deadline,
+    career stage restrictions), and given Wageningen's primary focus on Netherlands/EU
+    contexts, recommend monitoring for open calls and confirming Canadian eligibility
+    before investing application effort.
+- name: Crafoordska Stiftelsen
+  grants_url: https://www.crafoordska.se/
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Worth monitoring if an active call emerges. The applicant's ecological restoration
+    focus is potentially aligned with Crafoordska's historical interests, but the
+    strong methodological emphasis on AI and translational science may require a careful
+    fit assessment when full funding details are available.
+- name: Templeton World Charity Foundation
+  grants_url: https://www.templetonworldcharity.org/grant-opportunities
+  homepage: https://www.templetonworldcharity.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for relevant calls. Templeton's international scope makes this potentially
+    accessible to the applicant, but the research focus on applied ecological restoration
+    and local conservation may not be well-aligned with Templeton's typical emphasis
+    on foundational, philosophical, or existential questions. The AI and evidence
+    synthesis components are more promising angles.
+- name: Networks of Centres of Excellence of Canada
+  grants_url: https://www.nce-rce.gc.ca
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor NCE opportunities aligned with ecological restoration or sustainable
+    agriculture networks. The applicant's strong translational ecology and knowledge
+    mobilization focus fits NCE's mandate, but funding typically flows through established
+    multi-institution centres rather than individual early-career researchers. Best
+    pursued when launching a faculty position with centre-building ambitions.
+- name: University of Bath
+  grants_url: https://www.bath.ac.uk/research/funding/
+  homepage: https://www.bath.ac.uk/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: University of Bath funds interdisciplinary research with good thematic overlap
+    to the applicant's restoration ecology and social-ecological systems work. Recommend
+    checking the specific call requirements for Canadian eligibility, career stage
+    restrictions, and research scope alignment before investing application effort.
+- name: European Science Foundation
+  grants_url: https://www.esf.org/funding
+  homepage: https://www.esf.org/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Promising fit for ESF if the applicant can access a scheme that supports
+    Canadian participation (e.g., international collaborative grants or ESF partner
+    country arrangements). Strong research alignment with ecological restoration and
+    translational science, but Canadian eligibility requires verification against
+    specific call criteria.
+- name: Universiteit Antwerpen
+  grants_url: https://www.uantwerpen.be/en/research/funding/
+  homepage: https://www.uantwerpen.be/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor for open calls at Universiteit Antwerpen if they align with the applicant's
+    ecological restoration focus, but confirm Canadian eligibility and postdoc/early-career
+    track requirements before investing application effort. European funders may have
+    geographic or partnership preferences not yet visible.
+- name: Imperial College London
+  grants_url: https://www.imperial.ac.uk/research-and-innovation/funding/
+  homepage: https://www.imperial.ac.uk/
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Imperial College London is a prestigious funder with likely international
+    openness, and the applicant's interdisciplinary, translational ecology profile
+    aligns well with contemporary research priorities. However, Canadian eligibility
+    and current open calls are uncertain without page access; applicant should verify
+    institutional eligibility requirements and monitor for postdoc/early-career schemes.
+- name: University of Illinois at Urbana-Champaign
+  grants_url: https://www.research.illinois.edu/funding
+  homepage: https://www.illinois.edu
+  priority: medium
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Promising research fit for an R1 institution with likely strengths in environmental
+    sciences and conservation. Eligibility and career-stage fit require verification
+    on the actual funding page before investing application effort.
+- name: Intergovernmental Panel on Climate Change
+  grants_url: https://www.ipcc.ch/
+  homepage: ''
+  priority: medium
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-eligible
+  notes: IPCC is not a traditional research funder offering grants to individual researchers;
+    it is a UN assessment body that recruits scientists as authors and contributors.
+    The applicant should explore opportunities to serve as a lead or contributing
+    author on AR7 reports (particularly Working Group II on adaptation) if their expertise
+    aligns, but should not expect direct project funding. Monitor the author nomination
+    calls.
+  deadline_hint: IPCC is calling for author nominations for 2027 Methodology Reports
+    and is recruiting authors for the Seventh Assessment Report (AR7); specific submission
+    deadlines not visible in truncated page content.
+- name: Battelle
+  grants_url: https://www.battelle.org
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to active funding calls, this appears a weak fit. Battelle's
+    applied research focus and US headquarters suggest limited alignment with the
+    applicant's academic career trajectory and fundamental research interests, though
+    environmental programs warrant monitoring if specific calls open.
+- name: European Research Council
+  grants_url: https://erc.europa.eu/apply-grant
+  homepage: https://erc.europa.eu/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: 'While the applicant''s research fits ERC''s scope and career stage, the
+    critical barrier is geographic: ERC non-EU researcher funding requires relocation
+    to the EU, but the applicant is pursuing Canadian faculty positions. Only pursue
+    if the applicant plans to relocate to a European institution.'
+  deadline_hint: Page lists multiple grant schemes (Starting, Consolidator, Advanced,
+    etc.) but does not specify current open calls or deadlines. Check erc.europa.eu
+    for active call dates.
+- name: KU Leuven
+  grants_url: https://www.kuleuven.be/english
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: The provided page is primarily institutional marketing content without substantive
+    funding opportunity details. While KU Leuven likely offers competitive funding
+    for postdocs and early-career faculty, the applicant should locate the specific
+    funding call and eligibility criteria before investing effort.
+- name: Simons Foundation
+  grants_url: https://www.simonsfoundation.org/grant-programs/
+  homepage: https://www.simonsfoundation.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While Canadian eligible and the applicant's AI/methods expertise has marginal
+    relevance, Simons Foundation's focus on fundamental science (math, physics, computational
+    theory) rather than applied ecology and conservation makes this a poor strategic
+    fit. Better to target ecology-specific or environmental funders.
+- name: Novo Nordisk Fonden
+  grants_url: https://novonordiskfonden.dk/da/ansog-om-stoette/
+  homepage: https://novonordiskfonden.dk
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: 'Poor research fit: Novo Nordisk Fonden prioritizes health sciences and medical
+    research, not ecological restoration or conservation. While the applicant may
+    be geographically eligible, the thematic misalignment makes this an unlikely match;
+    applicant should prioritize Canadian environment/conservation funders.'
+- name: Knut och Alice Wallenbergs Stiftelse
+  grants_url: https://www.kaw.wallenberg.org/en/research-programs
+  homepage: https://www.kaw.wallenberg.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This funder is geographically misaligned (Swedish focus) and the applicant
+    should prioritize Canadian, US, and North American funding sources for this career
+    stage and research program. Monitor only if a Swedish collaboration opportunity
+    emerges.
+- name: Human Frontier Science Program
+  grants_url: https://www.hfsp.org/funding
+  homepage: https://www.hfsp.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Although the applicant is Canadian-eligible and at an appropriate career
+    stage for HFSP, the fundamental research focus mismatch is significant. HFSP prioritizes
+    mechanistic, molecular, and cellular-level biological research, while this applicant's
+    work is ecology-and-society focused with applied conservation goals. Only pursue
+    if reframing work toward fundamental biological mechanisms underlying social-ecological
+    interactions.
+- name: Arts and Humanities Research Council
+  grants_url: https://www.ukri.org/councils/ahrc/grants-and-awards/
+  homepage: https://www.ukri.org/councils/ahrc/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: AHRC is a UK-focused funder with limited direct funding for Canadian-based
+    researchers and institutions. The applicant's primary research (ecological restoration,
+    prairie conservation) falls outside AHRC's core humanities/social science remit,
+    making this a poor fit despite some methodological overlap in community engagement
+    and knowledge mobilization.
+- name: Ministry of Oceans and Fisheries
+  grants_url: https://www.mof.go.kr/
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant is likely eligible as a Canadian researcher, the thematic
+    mismatch between terrestrial prairie restoration and oceans/fisheries is substantial.
+    This opportunity is unlikely to be a good fit unless the applicant can reframe
+    their work within a marine or fisheries context.
+- name: Division of Biological Infrastructure
+  grants_url: https://www.nsf.gov/bio/dbi/solicitations.jsp
+  homepage: https://www.nsf.gov/bio/dbi/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant may be eligible as a transitioning faculty member, the
+    research focus on ecological restoration, knowledge mobilization, and social-ecological
+    systems is a poor thematic fit for NSF DBI's infrastructure and cyberinfrastructure
+    priorities. Consider NSF's Division of Environmental Biology or NIFA programs
+    instead.
+- name: University of Wisconsin-Madison
+  grants_url: https://research.wisc.edu/funding/
+  homepage: https://www.wisc.edu/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant's ecology research fits UW–Madison's general institutional
+    strengths, this funder page advertises internal institutional funding (primarily
+    for UW–Madison employees). The applicant is currently at Canadian institutions
+    (Carleton/Waterloo) and applying for tenure-track positions elsewhere, making
+    eligibility unclear and relevance limited unless explicitly applying to UW–Madison
+    faculty positions.
+  deadline_hint: Fall Research Competition mentioned; specific 2025 deadlines not
+    visible in provided text excerpt.
+- name: Science and Engineering Research Board
+  grants_url: https://serbonline.in/opportunities
+  homepage: https://serbonline.in
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: SERB is India-focused and unlikely to prioritize standalone Canadian applications
+    without institutional collaboration in India. While research themes show some
+    alignment, the applicant should prioritize Canadian, NSERC, or explicitly international
+    funding schemes.
+- name: Universiteit Hasselt
+  grants_url: https://www.uhasselt.be/en/research/funding
+  homepage: https://www.uhasselt.be
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to the funding call details, this opportunity presents moderate
+    research fit but significant eligibility uncertainty for a Canadian-based assistant
+    professor. The applicant should verify whether Universiteit Hasselt's current
+    programs accept international applicants and whether they align with specific
+    career-stage requirements.
+- name: Great Lakes Fishery Commission
+  grants_url: https://www.glfc.org/research-funding
+  homepage: https://www.glfc.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant is Canadian-eligible and the Commission operates in the
+    Great Lakes region, there is weak thematic fit between the applicant's terrestrial
+    prairie/grassland restoration focus and the Commission's aquatic fisheries mandate.
+    Applicant should monitor only if they have active Great Lakes aquatic ecosystem
+    interests.
+- name: Universidad Nacional Autónoma de México
+  grants_url: https://www.unam.mx/convocatorias
+  homepage: https://www.unam.mx/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While UNAM is a prestigious funder and may technically accept Canadian applicants,
+    the geographic mismatch (Mexico-focused institution vs. Canadian prairie-based
+    research) and lack of confirmed eligibility criteria make this a lower priority.
+    Monitor for specific bilateral or regional programs if available.
+- name: Agricultural Research Service
+  grants_url: https://www.ars.usda.gov/research/funding-opportunities/
+  homepage: https://www.ars.usda.gov/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant's grassland and restoration work has some alignment with
+    ARS interests, the primary barrier is likely Canadian ineligibility as a USDA
+    agency with domestic focus. Even if eligible, the translational AI and knowledge
+    mobilization emphasis may not align strongly with ARS's traditional applied agricultural
+    research model.
+- name: Division of Ocean Sciences
+  grants_url: https://www.nsf.gov/funding/pgm_summ.jsp?org=OCE&sel_org=OCE
+  homepage: https://www.nsf.gov/geo/oce/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Unless the applicant has marine or coastal restoration research not mentioned
+    in this profile, this funder is misaligned with stated ecological focus on prairie
+    grasslands. While career stage and likely Canadian eligibility are positive, the
+    disciplinary mismatch outweighs other factors.
+- name: Pfizer
+  grants_url: https://www.pfizer.com/science/funding-grants
+  homepage: https://www.pfizer.com/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Pfizer is unlikely to be a strong fit given the applicant's focus on ecological
+    restoration and prairie conservation rather than pharmaceutical or biomedical
+    research. Monitor only if Pfizer announces environment, sustainability, or One
+    Health initiatives that explicitly include conservation ecology.
+- name: Jacobs Foundation
+  grants_url: https://www.jacobsfoundation.org/call-for-proposals
+  homepage: https://www.jacobsfoundation.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While Canadians likely can apply to Jacobs Foundation, the applicant's research
+    focus on ecological restoration and conservation is a poor fit for a foundation
+    primarily committed to child development and education. Not recommended unless
+    foundation has recently expanded scope.
+- name: Ford Foundation
+  grants_url: https://www.fordfoundation.org/work/our-grants/
+  homepage: https://www.fordfoundation.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: The provided funding page is a general grants landing page with no specific
+    program details, eligibility criteria, or thematic focus areas. Recommend visiting
+    Ford Foundation's specific grant programs (e.g., Environment, Climate, or Agriculture
+    initiatives) to assess true fit; ecological restoration may fall outside core
+    priorities despite international reach.
+  deadline_hint: Page invites submissions via 'short online form' but no specific
+    deadlines or active calls are visible in the provided content.
+- name: British Council
+  grants_url: https://www.britishcouncil.org/funding
+  homepage: https://www.britishcouncil.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without page content, recommendation is uncertain, but British Council programs
+    rarely prioritize postdoc-to-faculty transitions in ecological restoration unless
+    explicitly designed for Canada-UK research collaboration. Monitor for environment-specific
+    calls.
+- name: Wenner-Gren Foundation
+  grants_url: https://www.wennergren.org/grants-fellowships
+  homepage: https://www.wennergren.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While Canadian eligibility is strong and career stage is likely acceptable,
+    the research focus on ecological restoration and AI methods is a poor match for
+    an anthropology-focused funder. Applicant should prioritize ecology, environmental
+    science, or interdisciplinary funders with explicit interest in conservation and
+    AI applications.
+  deadline_hint: Page shows 'Grants and Fellowships' menu but does not display active
+    calls or specific deadlines in the truncated content provided.
+- name: Yale-NUS College
+  grants_url: https://www.yale-nus.edu.sg
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Limited information suggests Yale-NUS College may prioritize Singapore/Asia-Pacific
+    or US-based researchers. The applicant's Canadian profile and research focus on
+    North American prairie grasslands and landowner engagement suggest misalignment
+    with this institution's likely geographic and thematic priorities. Monitor if
+    funder explicitly opens international calls.
+- name: Aarhus Universitets Forskningsfond
+  grants_url: https://www.au.dk
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Insufficient page content to assess this Danish university research fund
+    properly. No active call, eligibility criteria, research scope, or deadline information
+    visible. Recommend sourcing the full funding guidelines directly from Aarhus Universitet
+    before investing application effort.
+- name: Arnold and Mabel Beckman Foundation
+  grants_url: https://www.beckman-foundation.org/grant-programs
+  homepage: https://www.beckman-foundation.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While Canadian eligibility is probable and career stage fits, the Beckman
+    Foundation's focus on fundamental science and instrumentation in chemistry/life
+    sciences does not align well with this applicant's applied ecology, conservation,
+    and social-ecological systems work. Research fit is weak despite methodological
+    innovation potential.
+- name: Institut National de la Recherche Agronomique
+  grants_url: https://www.inrae.fr/appels-offres
+  homepage: https://www.inrae.fr/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While research areas align well with INRA's scope, this is a French national
+    institute not typically open to independent Canadian applications. Applicant should
+    explore this only if pursuing a postdoc or faculty position within a French/European
+    institution, or if co-applying with a French partner.
+- name: Directorate for Social, Behavioral and Economic Sciences
+  grants_url: https://www.nsf.gov/funding/opportunities.jsp
+  homepage: https://www.nsf.gov/sbe/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: SBE is primarily a US-focused funder with limited international applicant
+    pathways. The applicant's interdisciplinary profile (ecology + AI + social science)
+    is a partial fit, but the Canadian institutional affiliation and lack of a clear
+    US research partner make this opportunity unlikely to be accessible as a primary
+    applicant.
+- name: Japan Society for the Promotion of Science London
+  grants_url: https://www.jsps.go.jp/english/e-grants/index.html
+  homepage: https://www.jsps.go.jp/english/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: JSPS KAKENHI is primarily a domestic Japanese funding scheme. While international
+    collaborations are supported, Canadian-based researchers or Canadian institutions
+    are unlikely to be primary applicants. The applicant should verify whether JSPS
+    offers mechanisms for Canadian-Japan collaborative grants or whether they would
+    need a Japanese institutional partner to be eligible.
+- name: Leakey Foundation
+  grants_url: https://leakeyfoundation.org/apply-for-a-grant/
+  homepage: https://leakeyfoundation.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While Canadians are likely eligible to apply to Leakey Foundation, the applicant's
+    research in ecological restoration and AI-assisted evidence synthesis is not a
+    strong fit with the foundation's core focus on human evolution and paleoanthropology.
+    Recommend monitoring for ecology/human-environment themed calls, but prioritize
+    funders more aligned with conservation science and translational ecology.
+- name: Soehngen Institute of Anaerobic Microbiology
+  grants_url: https://www.siam.ugent.be/
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Significant disciplinary mismatch between anaerobic microbiology focus and
+    the applicant's ecological restoration/social-ecological systems expertise. Canadian
+    eligibility is plausible but unconfirmed; recommend confirming call details and
+    research scope alignment before investing application effort.
+- name: Fisheries and Oceans Canada
+  grants_url: https://www.dfo-mpo.gc.ca/about-nous/funding-financement/index-eng.html
+  homepage: https://www.dfo-mpo.gc.ca/
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Canadian eligibility likely acceptable, but research fit is weak given DFO's
+    aquatic/marine mandate versus applicant's terrestrial grassland focus. Page inaccessibility
+    prevents detailed assessment; recommend monitoring DFO calls if applicant expands
+    into wetland/aquatic restoration or watershed contexts.
+- name: Wissenschaftskolleg zu Berlin
+  grants_url: https://www.wiko-berlin.de/en/application/
+  homepage: https://www.wiko-berlin.de/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant may be technically eligible as an international researcher,
+    the thematic mismatch between applied ecological restoration/AI methods and Wissenschaftskolleg's
+    traditional emphasis on humanistic and social scientific inquiry makes this a
+    low-priority opportunity. The applicant should prioritize ecology-focused or interdisciplinary
+    funders in Canada or internationally.
+- name: Fulbright Norway
+  grants_url: https://www.fulbright.no/scholarships-for-norwegians
+  homepage: https://www.fulbright.no/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant may technically be eligible as a Canadian researcher,
+    Fulbright Norway programs typically require a Norway-based research component
+    or partner institution, and the applicant's research focus (prairie restoration,
+    North American contexts) has limited geographic relevance to Norway. Monitor only
+    if the applicant develops a Norway-based collaboration.
+- name: Instituto Serrapilheira
+  grants_url: https://www.serrapilheira.org/en/grants
+  homepage: https://www.serrapilheira.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without confirmed funding page details and given Instituto Serrapilheira's
+    likely Brazil/Latin America focus, this opportunity is a low priority unless the
+    applicant has regional research relevance or the funder explicitly supports international
+    collaborative research. Monitor for calls explicitly targeting North American
+    researchers.
+- name: Institute of Mountain Hazards and Environment
+  grants_url: https://imhe.cas.cn/
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Limited research fit for an applicant specializing in prairie conservation
+    and social-ecological restoration unless the funder has explicit programs in translational
+    ecology or AI methods. Canadian eligibility uncertain without viewing actual funding
+    criteria.
+- name: Maj ja Tor Nesslingin Säätiö
+  grants_url: https://www.nestling.fi
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to funder guidelines and given the Finnish origin of this
+    foundation, Canadian eligibility is uncertain and likely requires institutional
+    partnership or Nordic research focus. Recommend verifying directly with funder
+    before investing application effort. Research fit is moderate but not exceptionally
+    strong.
+- name: Lamont-Doherty Earth Observatory, Columbia University
+  grants_url: https://www.ldeo.columbia.edu
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant may be eligible as a Canadian researcher in some LDEO
+    programs, the research fit is weak; LDEO's Earth science and oceanographic focus
+    does not strongly align with prairie grassland ecology, social-ecological systems,
+    or knowledge mobilization work. Monitor LDEO's collaborative and international
+    initiatives but prioritize funders with explicit interest in ecological restoration
+    and translational ecology.
+- name: University of Oxford
+  grants_url: https://www.ox.ac.uk/research/funding
+  homepage: https://www.ox.ac.uk
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Monitor Oxford's funding schemes if they become available, but this is not
+    a high-priority lead given the geographic mismatch (UK funder, North American
+    research focus) and uncertainty about career-stage fit. Better suited for Canadian
+    or North American funders focused on ecological restoration and translational
+    science.
+- name: International Development Research Centre
+  grants_url: https://www.idrc.ca/en/funding
+  homepage: https://www.idrc.ca
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: IDRC is a Canadian funder but prioritizes research in developing regions;
+    the applicant's focus on Canadian prairie grassland conservation and domestic
+    landowner engagement appears misaligned with IDRC's geographic and thematic mandate.
+    Monitor for future calls that might align with climate-resilient agriculture or
+    food systems in the Global South.
+  deadline_hint: 'Multiple open calls visible: SGCI sub-Saharan Africa (April 30,
+    2026); International Joint Initiative (March 3, 2026); Canada-Israel Health Research
+    (Feb 25, 2026); Women''s Voice/Leadership (Nov 30, 2025); AI in Africa concept
+    notes (Sept 17, 2025); African Adolescents AABLE (Aug 7, 2025).'
+- name: Genome British Columbia
+  grants_url: https://www.genomebc.ca/funding
+  homepage: https://www.genomebc.ca
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Poor fit between applicant's interdisciplinary ecology/AI focus and Genome
+    BC's traditional genomics mandate. Geographic location (Ontario institutions applying
+    to BC funder) further reduces viability. Page truncation prevents full assessment
+    of current opportunities.
+- name: Universitetet i Bergen
+  grants_url: https://www.uib.no/en/research/funding
+  homepage: https://www.uib.no/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to the specific funding call details from Universitetet i
+    Bergen, eligibility and fit cannot be confidently assessed. This appears likely
+    to be an institutional or domestic Norwegian program rather than an international
+    call. Applicant should verify Canadian eligibility and career stage fit directly
+    with the funder before investing effort.
+- name: Safari Club International Foundation
+  grants_url: https://www.scifoundation.org/grants/
+  homepage: https://www.scifoundation.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Weak thematic alignment between the funder's traditional wildlife/game conservation
+    mandate and the applicant's interdisciplinary, AI-focused, social-ecological systems
+    approach. While prairie conservation has some relevance, the methodological and
+    topical mismatch suggests this is not a priority opportunity.
+- name: Save Our Seas Foundation
+  grants_url: https://www.saveourseas.com/grant-programme
+  homepage: https://www.saveourseas.com/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Significant disciplinary mismatch between applicant's terrestrial grassland
+    focus and funder's apparent marine conservation mission limits strategic fit.
+    Applicant should prioritize funders aligned with ecological restoration, prairie
+    conservation, or land-based social-ecological systems.
+- name: Vancouver Foundation
+  grants_url: https://www.vancouverfoundation.ca/grants
+  homepage: https://www.vancouverfoundation.ca/
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant is Canadian-eligible and research areas have some overlap
+    with foundation values, the corrupted page prevents full assessment of scope and
+    active calls. Recommend checking Vancouver Foundation's website directly for current
+    funding programs, eligibility criteria, and whether they support academic research
+    (vs. community-based projects) and transitional faculty positions.
+- name: Emil Aaltosen Säätiö
+  grants_url: https://www.emilaaltosensaatio.fi/
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to the funding page, eligibility and scope are uncertain.
+    Finnish private foundations typically prioritize Nordic/European institutions
+    and may have geographic or thematic restrictions misaligned with this applicant's
+    Canadian base and AI-heavy methodologies. Monitor if foundation publishes international
+    call, but not a priority target.
+- name: Centre for Environment, Fisheries and Aquaculture Science
+  grants_url: https://www.cefas.co.uk/our-science/funding-opportunities/
+  homepage: https://www.cefas.co.uk
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Limited fit for this applicant. Cefas is primarily a UK marine/fisheries
+    science funder; Canadian eligibility is uncertain and research focus (prairie
+    grassland conservation, terrestrial social-ecological systems) does not align
+    well with agency mandate. Monitor only if specific international or grassland-related
+    calls emerge.
+- name: Smithsonian Tropical Research Institute
+  grants_url: https://stri.si.edu/funding-opportunities
+  homepage: https://stri.si.edu
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Geographic mismatch (tropical vs. temperate prairie systems) and unknown
+    active calls make this a low-priority opportunity. Applicant should prioritize
+    funders with explicit temperate grassland or North American conservation focus
+    (e.g., NSERC, provincial funders, CWF).
+- name: Australian Academy of Science
+  grants_url: https://www.science.org.au/funding-and-grants
+  homepage: https://www.science.org.au
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without confirmation of Canadian eligibility or an active open call, this
+    funder is unlikely to be a primary target. Monitor the Australian Academy of Science
+    website for international collaboration programs or early-career researcher schemes
+    that may include Canadian participation.
+- name: City University of Hong Kong
+  grants_url: https://www.cityu.edu.hk
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: 'Low priority: institutional mission and geographic focus appear misaligned
+    with applicant''s prairie grassland and North American social-ecological work.
+    Recommend prioritizing Canadian federal funders (NSERC, SSHRC) and North American
+    research councils more aligned with ecological restoration and knowledge mobilization.'
+- name: United Soybean Board
+  grants_url: https://unitedsoybean.org/checkoff-funding/
+  homepage: https://unitedsoybean.org
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Poor research fit between applicant's grassland/ecological restoration focus
+    and US Soybean Board's commodity-crop mandate. Even if Canadian eligibility exists,
+    the thematic mismatch and unknown career-stage alignment make this a low-priority
+    opportunity for this applicant.
+- name: Environmental Research and Education Foundation
+  grants_url: https://www.erefdn.org/
+  homepage: ''
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Poor disciplinary fit between EREF's waste management and circular economy
+    focus and the applicant's ecological restoration and prairie conservation research.
+    While Canadian eligibility cannot be ruled out, the fundamental mismatch in research
+    scope makes this opportunity low priority unless specific EREF programs exist
+    that support ecological restoration work.
+- name: Max-Planck-Gesellschaft
+  grants_url: https://www.mpg.de/research/funding-opportunities
+  homepage: https://www.mpg.de/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: false
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant's interdisciplinary research has merit for MPS, the organization's
+    structure and funding models favor researchers with German/European institutional
+    anchors or established independence. As a Canadian postdoc transitioning to faculty,
+    this applicant should prioritize NSERC, SSHRC, or Canadian foundation schemes
+    better aligned with early-stage faculty development.
+- name: Burroughs Wellcome Fund
+  grants_url: https://www.bwfund.org/grant-opportunities
+  homepage: https://www.bwfund.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant is likely eligible as a Canadian at a North American
+    institution and career stage, the research focus on ecological restoration and
+    social-ecological systems is a poor match for BWF's biomedical and life sciences
+    emphasis. Better opportunities likely exist with Canadian research councils (NSERC)
+    or conservation-focused funders.
+- name: Canadian Institutes of Health Research
+  grants_url: https://www.cihr-irsc.gc.ca/e/193.html
+  homepage: https://www.cihr-irsc.gc.ca/
+  priority: low
+  canada_eligible: true
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: While the applicant is Canadian and eligible to apply to CIHR, the research
+    portfolio is fundamentally grounded in ecology and environmental conservation
+    rather than health research. CIHR would be a poor fit unless the applicant reframes
+    work around health dimensions of environmental restoration or seeks health-ecology
+    intersections.
+- name: Albert-Ludwigs-Universität Freiburg
+  grants_url: https://www.uni-freiburg.de/en/research/research-funding
+  homepage: https://www.uni-freiburg.de/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Geographic and institutional mismatch (Canadian researcher/institution applying
+    to German university funder) creates significant barriers unless the program explicitly
+    supports international collaboration. Recommend verifying Canadian eligibility
+    and active calls before investing application effort.
+- name: University of Adelaide
+  grants_url: https://www.adelaide.edu.au/research/funding
+  homepage: https://www.adelaide.edu.au
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to the funding page, this appears to be a lower-priority opportunity.
+    While the applicant is eligible as a Canadian researcher (likely), the career
+    stage eligibility is unknown and the research fit is only moderate. The applicant
+    should prioritize Canadian and North American funders better aligned with their
+    interdisciplinary AI + ecology focus.
+- name: Science and Industry Endowment Fund
+  grants_url: https://www.sief.org.au/grants
+  homepage: https://www.sief.org.au
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Without access to full funding criteria, this appears to be a UK-based science-industry
+    fund with unclear Canadian eligibility and moderate-to-weak research fit. Applicant
+    should verify UK/Canada partnership requirements and industry collaboration expectations
+    before investing application effort.
+- name: Young Lives Study
+  grants_url: https://www.younglives.org.uk/research/research-opportunities
+  homepage: https://www.younglives.org.uk/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-eligible
+  notes: Young Lives Study is unlikely to be a good fit for this applicant's ecological
+    restoration and prairie conservation research agenda. The funder's focus on child
+    poverty in low-income countries in the Global South does not align with the applicant's
+    translational ecology and grassland conservation work in Canada.
+- name: International Fund for Agricultural Development
+  grants_url: https://www.ifad.org/en/research-and-publications/grants
+  homepage: https://www.ifad.org/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-eligible
+  notes: Monitor for IFAD research calls, but this is unlikely a primary funding target
+    for the applicant's career stage and research focus. IFAD's mandate centers on
+    agricultural development in lower-income countries; Canadian prairie restoration
+    and faculty transition funding are better served by domestic or North American
+    funders.
+- name: Young Lives study
+  grants_url: https://www.younglives.org.uk/research-resources/research-opportunities
+  homepage: https://www.younglives.org.uk/
+  priority: low
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-eligible
+  notes: Young Lives' focus on child poverty and development in low/middle-income
+    countries does not align with the applicant's ecological restoration and prairie
+    conservation work. Not recommended unless the applicant has a novel collaborative
+    angle linking conservation to child well-being outcomes in Young Lives partner
+    countries.
+- name: James S. McDonnell Foundation
+  grants_url: https://www.jsmf.org/apply/
+  homepage: https://www.jsmf.org/
+  priority: low
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient page content to assess eligibility or fit with confidence. JSMF's
+    traditional scope (brain/cognitive science) does not obviously align with applicant's
+    ecological restoration focus; applicant should verify Canadian eligibility and
+    funder's current strategic priorities before investing effort.
+- name: Centre National de la Recherche Scientifique
+  grants_url: https://www.cnrs.fr/en/calls-proposals
+  homepage: https://www.cnrs.fr/
+  priority: low
+  canada_eligible: false
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-ineligible
+  notes: As a Canadian postdoctoral researcher at Canadian institutions, the applicant
+    is ineligible for direct CNRS funding unless applying as part of a structured
+    international collaboration with a French partner. CNRS is a domestic French funder
+    with limited direct support for non-French researchers.
+- name: HORIZON EUROPE Framework Programme
+  grants_url: https://ec.europa.eu/info/en/research-and-innovation/funding/funding-opportunities/funding-programmes/horizon-europe/calls-proposals_en
+  homepage: https://ec.europa.eu/info/en/research-and-innovation/funding/funding-opportunities/funding-programmes/horizon-europe_en
+  priority: low
+  canada_eligible: false
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-ineligible
+  notes: While research fit is strong and career stage is eligible, Canadian applicants
+    cannot directly lead Horizon Europe grants. Applicant should pursue Canadian funders
+    (NSERC, SSHRC, CIHR) or explore Horizon Europe only as a junior partner in EU-led
+    consortia if invited.
+  deadline_hint: Horizon Europe operates on rolling and annual calls; specific deadline
+    unknown without page access.
+- name: Centro de Estudos Ambientais e Marinhos, Universidade de Aveiro
+  grants_url: https://www.ua.pt/
+  homepage: ''
+  priority: low
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  notes: Page content is insufficient to assess eligibility or deadlines; funder appears
+    to be Portuguese/European with likely domestic or EU focus. Applicant should retrieve
+    complete funding guidelines before investing effort, though research fit is moderate
+    at best given geographic and thematic misalignment.
+- name: Commonwealth Scientific and Industrial Research Organisation
+  grants_url: https://www.csiro.au/en/about/funding-and-partnerships/funding
+  homepage: https://www.csiro.au/
+  priority: low
+  canada_eligible: false
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - canada-ineligible
+  notes: While research fit is strong, CSIRO is an Australian national funder with
+    limited direct funding for Canadian primary applicants. Applicant should prioritize
+    Canadian tri-council agencies (NSERC, SSHRC) or international collaborative schemes
+    where Canada is eligible.
+- name: European Union
+  grants_url: https://europa.eu/grants
+  homepage: https://europa.eu
+  priority: low
+  canada_eligible: false
+  canada_confidence: high
+  career_stage_eligible: true
+  research_fit_score: 4
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-ineligible
+  notes: Research fit is strong, but Canadian eligibility is highly unlikely under
+    standard EU funding rules without international partnership frameworks or explicit
+    global calls. Applicant should prioritize Canadian (NSERC, SSHRC, CFI) and North
+    American funders (NSF, USDA) instead.
+- name: Norges Miljø- og Biovitenskapelige Universitet
+  grants_url: https://www.nmbu.no/
+  homepage: ''
+  priority: low
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess eligibility and relevance. Norwegian funder
+    may have restricted eligibility to Norwegian or Nordic institutions; Canadian
+    eligibility is unknown. Research fit is moderate but would require detailed program
+    guidelines.
+  deadline_hint: Page shows countdown timer elements but actual deadline values are
+    not readable in truncated content.
+- name: Strategiske Forskningsråd
+  grants_url: https://ufm.dk/en/research-and-innovation/councils-and-commissions/the-strategic-research-council/calls-for-proposals
+  homepage: https://ufm.dk/en/research-and-innovation/councils-and-commissions/the-strategic-research-council
+  priority: low
+  canada_eligible: false
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  - canada-ineligible
+  notes: Unlikely to be accessible to a Canadian-based applicant without a Danish
+    institutional partner. Recommend prioritizing Canadian (NSERC, SSHRC) and international
+    collaborative schemes (Belmont Forum, bilateral agreements) instead.
+- name: Universidad de Alcalá
+  grants_url: https://www.uah.es/
+  homepage: ''
+  priority: low
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this funder meaningfully. The page content
+    lacks a visible funding call, eligibility criteria, or research priorities. Spanish
+    institutions typically prioritize domestic or EU-based researchers; Canadian eligibility
+    is unclear. Recommend searching for a specific funding announcement or research
+    call before investing effort.
+- name: Institut Polaire Français Paul Emile Victor
+  grants_url: https://www.ipev.fr/
+  homepage: ''
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This polar research funder is misaligned with the applicant's temperate grassland
+    and prairie conservation focus. Even if Canadians are eligible, the thematic mismatch
+    makes this an unsuitable opportunity to pursue.
+- name: Fondation Leducq
+  grants_url: https://www.leducqfoundation.org/our-work/research-programs/
+  homepage: https://www.leducqfoundation.org/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Fondation Leducq is fundamentally misaligned with this applicant's research
+    portfolio. While Canadian eligibility is likely, the funder's biomedical focus
+    makes this opportunity unsuitable for an ecology and conservation-focused researcher.
+- name: Scientific Committee on Antarctic Research
+  grants_url: https://www.scar.org/funding/
+  homepage: https://www.scar.org/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Strong geographic and disciplinary mismatch. Applicant's research focus on
+    Canadian prairie restoration and translational ecology is fundamentally misaligned
+    with SCAR's Antarctic research mandate. Not a productive use of application effort.
+- name: Division of Polar Programs
+  grants_url: https://www.nsf.gov/geo/plr/
+  homepage: ''
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Poor thematic alignment with polar research focus is the primary barrier.
+    Unless the applicant has unpublished polar ecology work or can reframe prairie
+    restoration within polar contexts (unlikely), this funder is not a strategic match
+    despite potential Canadian eligibility.
+- name: European Office of Aerospace Research and Development
+  grants_url: https://www.eoard.org/funding-opportunities
+  homepage: https://www.eoard.org/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: Poor research fit for EOARD's aerospace and defense research mission. Applicant
+    should prioritize Canadian and international funders focused on ecology, conservation,
+    and translational environmental science (e.g., NSERC, SSHRC, Belmont Forum) rather
+    than defense-oriented programs.
+- name: Randy Shaver Cancer Research and Community Fund
+  grants_url: https://www.randyshavercanc.org/
+  homepage: ''
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This is a cancer research-focused fund with no alignment to the applicant's
+    ecological restoration, conservation, and AI-in-ecology research portfolio. Not
+    a viable funding match regardless of eligibility.
+- name: Endangered Languages Documentation Programme
+  grants_url: https://www.eldp.soas.ac.uk/funding
+  homepage: https://www.eldp.soas.ac.uk/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This is a fundamental disciplinary mismatch. The applicant works in ecology
+    and environmental conservation; ELDP is dedicated to endangered language documentation.
+    Even the applicant's methods (LLMs, causal inference) do not align with ELDP's
+    core mission.
+- name: Crohn's and Colitis Foundation
+  grants_url: https://www.crohnscolitisfoundation.org/grants-fellowships
+  homepage: https://www.crohnscolitisfoundation.org/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This is a fundamental mismatch between applicant research (ecology, conservation,
+    AI-assisted evidence synthesis) and funder scope (IBD clinical and biomedical
+    research). Not a viable opportunity regardless of eligibility.
+- name: European Cooperation in Science and Technology
+  grants_url: https://www.cost.eu/funding-opportunities/
+  homepage: https://www.cost.eu/
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  - canada-eligible
+  notes: This appears to be a Ukraine-specific funding initiative from 2021 with no
+    evidence of active calls or Canadian eligibility. The applicant should investigate
+    general COST Action opportunities instead, but this particular page is not a suitable
+    funding target.
+- name: Permanent Service on Mean Sea Level
+  grants_url: https://www.bodc.ac.uk/data/hosted_projects/psmsl/
+  homepage: ''
+  priority: skip
+  canada_eligible: true
+  canada_confidence: medium
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  - international
+  - canada-eligible
+  notes: This funder is fundamentally misaligned with the applicant's research portfolio.
+    PSMSL supports sea level science and oceanographic monitoring, while the applicant
+    works on grassland restoration, social-ecological systems, and AI-assisted evidence
+    synthesis.
+- name: European Commission
+  grants_url: https://ec.europa.eu/info/funding-tenders/funding-opportunities_en
+  homepage: https://ec.europa.eu/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  notes: This is a generic EC funding portal landing page with no active call, deadline,
+    or eligibility information. Applicant should search the EC funding database directly
+    for specific calls; Canadian eligibility for most EC schemes is limited unless
+    hosted by EU/associated institution partner.
+- name: National Research Foundation
+  grants_url: https://www.nrf.ac.za/funding
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  notes: Cannot assess without confirmed funder identity and eligibility criteria.
+    'National Research Foundation' is ambiguous; recommend confirming which NRF this
+    refers to and obtaining actual funding guidelines before investing application
+    effort.
+- name: Bill and Melinda Gates Foundation
+  grants_url: https://www.gatesfoundation.org/how-we-work/quick-links/grants-database
+  homepage: https://www.gatesfoundation.org/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Page content is inaccessible (JavaScript tracking code only). Based on Gates
+    Foundation's known focus areas and the applicant's ecological restoration/conservation
+    research, this opportunity appears misaligned and low-priority; applicant should
+    verify Gates' current funding themes before pursuing.
+- name: Joint Genome Institute
+  grants_url: https://jgi.doe.gov/our-science/science-programs/community-science-program/
+  homepage: https://jgi.doe.gov/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient page content to assess; however, JGI's core mission in genomics
+    and metagenomics appears misaligned with this applicant's ecosystem restoration
+    and translational ecology focus. Not recommended for pursuit.
+- name: Hong Kong Polytechnic University
+  grants_url: https://www.polyu.edu.hk/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this opportunity. The provided page is
+    a PolyU institutional homepage, not a specific funding call. Without access to
+    the actual funding program details, eligibility criteria, and geographic scope,
+    this cannot be meaningfully evaluated for a Canadian-based applicant.
+- name: National Research, Development and Innovation Office
+  grants_url: https://nkfih.gov.hu/palyazatok/palyazati-felhivasok
+  homepage: https://nkfih.gov.hu/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 3
+  tags:
+  - funding
+  - ecology
+  notes: Cannot responsibly assess without knowing the funder's country of origin
+    and eligibility criteria. If this is Hungary's NRDI Office or a similar domestic-focused
+    body, Canadian researchers are likely ineligible. Applicant should verify funder
+    identity and access the actual call before investing time.
+- name: Leon Levy Foundation
+  grants_url: https://www.leonlevyfoundation.org
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this opportunity. The provided webpage
+    content lacks substantive program details, eligibility criteria, or funding priorities.
+    Recommend visiting the full Leon Levy Foundation website or obtaining complete
+    funding guidelines before proceeding.
+- name: University of Georgia Research Foundation
+  grants_url: https://research.uga.edu/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this opportunity. The page content provided
+    contains only website template code with no funding program details, eligibility
+    criteria, or research scope. Recommend obtaining the complete funding opportunity
+    description directly from UGA Research Foundation before pursuing.
+- name: Université Paris Diderot
+  grants_url: https://u-paris.fr/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this opportunity. The provided funding
+    page contains only website boilerplate without program details, eligibility criteria,
+    or active funding calls. Recommend retrieving the actual funding program page
+    before investing application effort.
+- name: North Pacific Research Board
+  grants_url: https://www.nprb.org/funding/
+  homepage: https://www.nprb.org/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: null
+  tags:
+  - funding
+  - ecology
+  notes: 'Page content is non-functional (JavaScript loader code only). Cannot assess
+    eligibility or fit. Recommend: (1) manually visit the funder website to review
+    actual program guidelines, or (2) contact the funder directly for eligibility
+    confirmation and program scope details.'
+- name: Vienna Science and Technology Fund
+  grants_url: https://www.wwtf.at/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess due to corrupted page content, combined
+    with WWTF being an Austrian funder unlikely to support Canadian-based researchers
+    without explicit international programs. Recommend verifying funder eligibility
+    directly on cleaned website before pursuit.
+- name: University of Washington
+  grants_url: https://www.washington.edu
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: null
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient data to evaluate this opportunity. The provided funding page
+    content is only technical WordPress markup with no actual program information,
+    eligibility criteria, or research scope. Applicant should locate the actual program
+    description or funding announcement.
+- name: Genome Canada
+  grants_url: https://www.genomecanada.ca/en/funding-opportunities
+  homepage: https://www.genomecanada.ca/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient page content to assess eligibility or relevance. Applicant's
+    research profile (AI-assisted evidence synthesis, social-ecological systems, prairie
+    conservation) appears misaligned with Genome Canada's typical genomics mandate;
+    recommend confirming funder scope before investing application effort.
+- name: Bonnie Babes Foundation
+  grants_url: https://www.bonniebabes.org.uk/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to assess this opportunity. The funder's apparent
+    focus on infants/early childhood appears misaligned with the applicant's ecological
+    and translational ecology research. Recommend verifying funder scope before investing
+    application effort.
+- name: International Business Machines Corporation
+  grants_url: https://www.ibm.com/
+  homepage: ''
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 1
+  tags:
+  - funding
+  - ecology
+  notes: The provided page content does not contain substantive funding program information—only
+    IBM corporate website infrastructure. Unable to assess eligibility, scope, or
+    fit without access to actual funding program details.
+- name: Universitas Gadjah Mada
+  grants_url: https://ugm.ac.id/en/research
+  homepage: https://ugm.ac.id/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: 2
+  tags:
+  - funding
+  - ecology
+  notes: Insufficient information to recommend pursuit. The page provided contains
+    no funding call details, eligibility criteria, or research priorities. Applicant
+    should verify whether UGM offers international collaborative grants or postdoctoral
+    fellowships before investing effort; domestic Canadian and North American funders
+    are likely better-aligned with their profile and career trajectory.
+- name: University of California, Santa Cruz
+  grants_url: https://research.ucsc.edu/funding/
+  homepage: https://www.ucsc.edu/
+  priority: skip
+  canada_eligible: false
+  canada_confidence: low
+  career_stage_eligible: true
+  research_fit_score: null
+  tags:
+  - funding
+  - ecology
+  notes: Page content is non-substantive (New Relic analytics code only). Cannot evaluate
+    this opportunity without access to the actual funding program page with eligibility
+    criteria, research scope, and application details.
