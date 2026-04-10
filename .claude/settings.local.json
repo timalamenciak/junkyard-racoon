@@ -11,7 +11,8 @@
       "WebFetch(domain:onlinelibrary.wiley.com)",
       "WebFetch(domain:www.canada.ca)",
       "Bash(python -c \"import output.publish_static_digest; print\\(''OK''\\)\")",
-      "Bash(python -c \"import output.publish_static_digest; import processing.score_news; print\\(''OK''\\)\")"
+      "Bash(python -c \"import output.publish_static_digest; import processing.score_news; print\\(''OK''\\)\")",
+      "WebFetch(domain:gethomepage.dev)"
     ]
   }
 }

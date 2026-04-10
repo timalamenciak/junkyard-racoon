@@ -239,6 +239,59 @@ def main() -> None:
     if mastodon_toots:
         print(f"Generated {len(mastodon_toots)} Mastodon toots")
 
+    homepage_items = []
+    for article in relevant_articles:
+        try:
+            score_pct = int(float(article.get("relevance_score", 0)) * 100)
+        except Exception:
+            score_pct = 0
+        homepage_items.append({
+            "title": _truncate_plain_text(article.get("title", ""), 60),
+            "badge": f"paper {score_pct}%",
+            "link": str(article.get("link", "")),
+        })
+    for news_item in relevant_news:
+        try:
+            score_pct = int(float(news_item.get("relevance_score", 0)) * 100)
+        except Exception:
+            score_pct = 0
+        badge = f"news {score_pct}%" if score_pct else "news"
+        homepage_items.append({
+            "title": _truncate_plain_text(news_item.get("title", ""), 60),
+            "badge": badge,
+            "link": str(news_item.get("link", "")),
+        })
+    for grant in relevant_grants:
+        try:
+            score_pct = int(float(grant.get("relevance_score", 0)) * 100)
+        except Exception:
+            score_pct = 0
+        homepage_items.append({
+            "title": _truncate_plain_text(grant.get("title", ""), 60),
+            "badge": f"grant {score_pct}%",
+            "link": str(grant.get("link", "")),
+        })
+
+    def _score_from_badge(item: dict) -> int:
+        try:
+            return int(item["badge"].rsplit(" ", 1)[-1].rstrip("%"))
+        except Exception:
+            return 0
+
+    homepage_items.sort(key=_score_from_badge, reverse=True)
+
+    homepage_feed = {
+        "date": date_str,
+        "generated_at": digest_payload["generated_at"],
+        "articles_count": len(relevant_articles),
+        "news_count": len(relevant_news),
+        "grants_count": len(relevant_grants),
+        "todos_count": len(prioritized_todos),
+        "items": homepage_items,
+    }
+    dump_json(OUTPUT_DIR / "homepage_feed.json", homepage_feed)
+    print(f"Wrote homepage feed to {OUTPUT_DIR / 'homepage_feed.json'}")
+
 
 if __name__ == "__main__":
     main()

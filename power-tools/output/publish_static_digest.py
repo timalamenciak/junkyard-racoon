@@ -1156,6 +1156,9 @@ def main() -> None:
             encoding="utf-8",
         )
     dump_json(site_dir / "digest.json", state)
+    homepage_feed_src = OUTPUT_DIR / "homepage_feed.json"
+    if homepage_feed_src.exists():
+        shutil.copy2(homepage_feed_src, site_dir / "homepage_feed.json")
     publish_site(site_dir, deploy_dir)
 
     result = {
