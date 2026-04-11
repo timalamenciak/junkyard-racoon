@@ -12,7 +12,12 @@
       "WebFetch(domain:www.canada.ca)",
       "Bash(python -c \"import output.publish_static_digest; print\\(''OK''\\)\")",
       "Bash(python -c \"import output.publish_static_digest; import processing.score_news; print\\(''OK''\\)\")",
-      "WebFetch(domain:gethomepage.dev)"
+      "WebFetch(domain:gethomepage.dev)",
+      "WebFetch(domain:universityaffairs.ca)",
+      "Bash(find 'C:\\\\Users\\\\Tim Alamenciak\\\\Documents\\\\RacoonLab\\\\junkyard-racoon' -type f -name crontab*)",
+      "Bash(find 'C:\\\\Users\\\\Tim Alamenciak\\\\Documents\\\\RacoonLab\\\\junkyard-racoon' -type f \\\\\\(-name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
+      "Bash(find 'C:\\\\Users\\\\Tim Alamenciak\\\\Documents\\\\RacoonLab\\\\junkyard-racoon' -type f -name *.py -o -name *.yaml -o -name *.yml)",
+      "Bash(find 'C:\\\\Users\\\\Tim Alamenciak\\\\Documents\\\\RacoonLab\\\\junkyard-racoon\\\\power-tools' -name *.log -o -name *log* -type f)"
     ]
   }
 }

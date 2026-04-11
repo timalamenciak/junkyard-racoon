@@ -130,12 +130,26 @@ def _extract_university_affairs_result(anchor, base_url: str) -> dict:
     organization = ""
     location = ""
     posted_date = ""
+    _next_is_location = False
+    _next_is_date = False
     for value in metadata:
         lowered = value.lower()
+        if _next_is_location:
+            location = value
+            _next_is_location = False
+            continue
+        if _next_is_date:
+            posted_date = value
+            _next_is_date = False
+            continue
         if lowered.startswith("location "):
             location = value.split(" ", 1)[1].strip()
+        elif lowered == "location":
+            _next_is_location = True
         elif lowered.startswith("posting date "):
             posted_date = value.split(" ", 2)[2].strip()
+        elif lowered in ("posting date", "date posted"):
+            _next_is_date = True
         elif not organization and not lowered.startswith("sort by") and "results" not in lowered:
             organization = value
     summary = _truncate_summary(" ".join(part for part in [organization, location, posted_date] if part))

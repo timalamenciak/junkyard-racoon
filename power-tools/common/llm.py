@@ -57,6 +57,38 @@ def chat_completion(messages: list[dict[str, str]], max_tokens: int = 1200, temp
     return response["choices"][0]["message"]["content"]
 
 
+def _sanitize_json_strings(text: str) -> str:
+    """Escape literal control characters that appear inside JSON string values."""
+    result = []
+    in_string = False
+    escape_next = False
+    for char in text:
+        if escape_next:
+            result.append(char)
+            escape_next = False
+            continue
+        if in_string and char == "\\":
+            escape_next = True
+            result.append(char)
+            continue
+        if char == '"':
+            in_string = not in_string
+            result.append(char)
+            continue
+        if in_string and ord(char) < 0x20:
+            if char == "\n":
+                result.append("\\n")
+            elif char == "\r":
+                result.append("\\r")
+            elif char == "\t":
+                result.append("\\t")
+            else:
+                result.append(f"\\u{ord(char):04x}")
+        else:
+            result.append(char)
+    return "".join(result)
+
+
 def _extract_balanced_json_block(text: str, opener: str, closer: str) -> str | None:
     start = text.find(opener)
     while start != -1:
@@ -86,7 +118,12 @@ def _extract_balanced_json_block(text: str, opener: str, closer: str) -> str | N
                         json.loads(candidate)
                         return candidate
                     except json.JSONDecodeError:
-                        break
+                        sanitized = _sanitize_json_strings(candidate)
+                        try:
+                            json.loads(sanitized)
+                            return sanitized
+                        except json.JSONDecodeError:
+                            break
         start = text.find(opener, start + 1)
     return None
 

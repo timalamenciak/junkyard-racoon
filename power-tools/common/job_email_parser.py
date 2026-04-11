@@ -59,6 +59,9 @@ ACADEMIC_CONTEXT_KEYWORDS = (
     "wildlife",
     "environmental science",
     "natural resources",
+    "geography",
+    "geomatics",
+    "environment &",
 )
 CONSERVATION_KEYWORDS = (
     "conservation",
