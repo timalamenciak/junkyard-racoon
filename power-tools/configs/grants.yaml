@@ -33,6 +33,167 @@ sources:
   - grants
   - conservation
   max_items: 40
+
+# --- Web-scraped grant listing pages ---
+- name: NSERC – Funding Opportunities
+  type: web_html
+  scraper: generic_grants
+  url: https://www.nserc-crsng.gc.ca/funding-financement/index_eng.asp
+  max_items: 25
+  keywords:
+  - grant
+  - fund
+  - award
+  - opportunity
+  - call
+  - discovery
+  - alliance
+
+- name: SSHRC – Funding Opportunities
+  type: web_html
+  scraper: generic_grants
+  url: https://www.sshrc-crsh.gc.ca/funding-financement/funding_opportunities-possibilites_de_financement/index-eng.aspx
+  max_items: 25
+  keywords:
+  - grant
+  - fund
+  - award
+  - opportunity
+  - call
+  - partnership
+  - insight
+
+- name: Canada Foundation for Innovation – Funding
+  type: web_html
+  scraper: generic_grants
+  url: https://www.innovation.ca/funding-opportunities
+  max_items: 20
+  keywords:
+  - fund
+  - opportunity
+  - infrastructure
+  - competition
+  - apply
+
+- name: National Geographic Society – Grants
+  type: web_html
+  scraper: generic_grants
+  url: https://www.nationalgeographic.org/funding-opportunities/
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - award
+  - fellowship
+  - conservation
+  - exploration
+  - apply
+
+- name: SESYNC – Opportunities
+  type: web_html
+  scraper: generic_grants
+  url: https://www.sesync.org/opportunities
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - fellowship
+  - working group
+  - opportunity
+  - apply
+
+- name: NSF – Division of Environmental Biology
+  type: web_html
+  scraper: generic_grants
+  url: https://www.nsf.gov/bio/deb/solicitations.jsp
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - award
+  - ecology
+  - biodiversity
+  - conservation
+  - solicitation
+
+- name: UKRI/NERC – Funding
+  type: web_html
+  scraper: generic_grants
+  url: https://www.ukri.org/councils/nerc/funding/
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - fellowship
+  - opportunity
+  - call
+  - environment
+  - ecology
+
+- name: Royal Society – Grants and Awards
+  type: web_html
+  scraper: generic_grants
+  url: https://royalsociety.org/grants-schemes-awards/
+  max_items: 20
+  keywords:
+  - grant
+  - award
+  - fellowship
+  - fund
+  - apply
+  - science
+
+- name: Packard Foundation – Open Calls
+  type: web_html
+  scraper: generic_grants
+  url: https://www.packard.org/what-we-fund/open-calls/
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - conservation
+  - science
+  - apply
+
+- name: Biodiversa+ – Calls for Proposals
+  type: web_html
+  scraper: generic_grants
+  url: https://www.biodiversa.org/calls-for-proposals
+  max_items: 20
+  keywords:
+  - call
+  - proposal
+  - grant
+  - fund
+  - biodiversity
+  - conservation
+
+- name: John Templeton Foundation – Grants
+  type: web_html
+  scraper: generic_grants
+  url: https://www.templeton.org/grant-opportunities
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - opportunity
+  - apply
+  - science
+  - research
+
+- name: PADI Foundation – Grants
+  type: web_html
+  scraper: generic_grants
+  url: https://www.padifoundation.org/grants
+  max_items: 20
+  keywords:
+  - grant
+  - fund
+  - award
+  - conservation
+  - marine
+  - apply
+
 funders:
 - name: Natural Sciences and Engineering Research Council of Canada
   grants_url: https://www.nserc-crsng.gc.ca/funding-financement/index_eng.asp

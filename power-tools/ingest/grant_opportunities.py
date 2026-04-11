@@ -17,6 +17,7 @@ from common.http_utils import fetch_bytes
 from common.email_source_registry import route_matches_target
 from common.io_utils import CONFIGS_DIR, INGEST_DIR, dump_json, ensure_data_dirs, load_json, load_yaml
 from common.email_utils import collapse_ws
+from common.grant_web_scraper import scrape_generic_grant_page
 from common.pivot_email_parser import parse_pivot_email_opportunities
 from common.runtime import is_test_mode
 
@@ -140,6 +141,42 @@ def load_manual_grant_items() -> list[dict]:
     return items
 
 
+def load_web_grant_items() -> list[dict]:
+    config = load_yaml(CONFIGS_DIR / "grants.yaml")
+    items: list[dict] = []
+    seen_keys: set[str] = set()
+    failed_sources: list[str] = []
+    for source in config.get("sources", []):
+        if source.get("type") != "web_html":
+            continue
+        if str(source.get("scraper", "generic_grants")).strip().lower() != "generic_grants":
+            continue
+        source_name = str(source.get("name", source.get("url", "Unknown")))
+        try:
+            scraped = scrape_generic_grant_page(
+                source["url"],
+                source_name,
+                keywords=[str(v) for v in source.get("keywords", []) if str(v).strip()],
+                max_items=int(source.get("max_items", 20)),
+            )
+        except Exception as exc:
+            print(f"[grant_opportunities] WARNING: web scrape failed for {source_name!r}: {exc}", file=sys.stderr)
+            failed_sources.append(source_name)
+            continue
+        for item in scraped:
+            dedupe_key = "||".join([item.get("link", "").strip(), item.get("title", "").strip().lower()])
+            if dedupe_key in seen_keys:
+                continue
+            seen_keys.add(dedupe_key)
+            items.append(item)
+    if failed_sources:
+        print(
+            f"[grant_opportunities] {len(failed_sources)} web source(s) failed: {', '.join(failed_sources)}",
+            file=sys.stderr,
+        )
+    return items
+
+
 def load_email_grant_items() -> list[dict]:
     payload = load_json(INGEST_DIR / "email_messages.json", default={"items": []}) or {}
     items: list[dict] = []
@@ -203,7 +240,7 @@ def main() -> None:
             },
         )
         print(f"Wrote {len(items)} sample grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
-        print(f"[grant_opportunities] counts: rss={len(rss_items)}, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
+        print(f"[grant_opportunities] counts: rss={len(rss_items)}, web=0, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
         return
 
     config = load_yaml(CONFIGS_DIR / "grants.yaml")
@@ -241,8 +278,10 @@ def main() -> None:
             items.append(item)
 
     rss_count = len(items)
+    web_items = [apply_source_priority(i, funder_index) for i in load_web_grant_items()]
     email_items = [apply_source_priority(i, funder_index) for i in load_email_grant_items()]
     manual_items = [apply_source_priority(i, funder_index) for i in load_manual_grant_items()]
+    items.extend(web_items)
     items.extend(email_items)
     items.extend(manual_items)
     dump_json(
@@ -250,7 +289,7 @@ def main() -> None:
         {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "items": items},
     )
     print(f"Wrote {len(items)} grant opportunities to {INGEST_DIR / 'grant_opportunities.json'}")
-    print(f"[grant_opportunities] counts: rss={rss_count}, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
+    print(f"[grant_opportunities] counts: rss={rss_count}, web={len(web_items)}, email={len(email_items)}, manual={len(manual_items)}, merged={len(items)}")
     if failed_sources:
         print(f"[grant_opportunities] {len(failed_sources)} source(s) unavailable: {', '.join(failed_sources)}", file=sys.stderr)
 
