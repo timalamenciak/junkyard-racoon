@@ -39,6 +39,7 @@ sources:
   type: web_html
   scraper: generic_grants
   url: https://www.nserc-crsng.gc.ca/funding-financement/index_eng.asp
+  ssl_verify: false  # Government of Canada PKI cert not in all Ubuntu CA bundles
   max_items: 25
   keywords:
   - grant
@@ -53,6 +54,7 @@ sources:
   type: web_html
   scraper: generic_grants
   url: https://www.sshrc-crsh.gc.ca/funding-financement/funding_opportunities-possibilites_de_financement/index-eng.aspx
+  ssl_verify: false  # Government of Canada PKI cert not in all Ubuntu CA bundles
   max_items: 25
   keywords:
   - grant
@@ -66,7 +68,7 @@ sources:
 - name: Canada Foundation for Innovation – Funding
   type: web_html
   scraper: generic_grants
-  url: https://www.innovation.ca/funding-opportunities
+  url: https://www.innovation.ca/apply-manage-awards/funding-opportunities
   max_items: 20
   keywords:
   - fund
@@ -89,23 +91,10 @@ sources:
   - exploration
   - apply
 
-- name: SESYNC – Opportunities
-  type: web_html
-  scraper: generic_grants
-  url: https://www.sesync.org/opportunities
-  max_items: 20
-  keywords:
-  - grant
-  - fund
-  - fellowship
-  - working group
-  - opportunity
-  - apply
-
 - name: NSF – Division of Environmental Biology
   type: web_html
   scraper: generic_grants
-  url: https://www.nsf.gov/bio/deb/solicitations.jsp
+  url: https://www.nsf.gov/funding/opportunities/deb-division-environmental-biology
   max_items: 20
   keywords:
   - grant
@@ -116,10 +105,10 @@ sources:
   - conservation
   - solicitation
 
-- name: UKRI/NERC – Funding
+- name: UKRI/NERC – Funding Opportunities
   type: web_html
   scraper: generic_grants
-  url: https://www.ukri.org/councils/nerc/funding/
+  url: https://www.ukri.org/opportunity/?filter_council%5B%5D=826
   max_items: 20
   keywords:
   - grant
@@ -143,10 +132,10 @@ sources:
   - apply
   - science
 
-- name: Packard Foundation – Open Calls
+- name: Packard Foundation – Funding Opportunities
   type: web_html
   scraper: generic_grants
-  url: https://www.packard.org/what-we-fund/open-calls/
+  url: https://www.packard.org/grantees/funding-opportunties/
   max_items: 20
   keywords:
   - grant
@@ -171,7 +160,7 @@ sources:
 - name: John Templeton Foundation – Grants
   type: web_html
   scraper: generic_grants
-  url: https://www.templeton.org/grant-opportunities
+  url: https://www.templeton.org/grants
   max_items: 20
   keywords:
   - grant
@@ -185,6 +174,7 @@ sources:
   type: web_html
   scraper: generic_grants
   url: https://www.padifoundation.org/grants
+  ssl_verify: false  # PADI Foundation SSL chain incomplete on some servers
   max_items: 20
   keywords:
   - grant

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -15,7 +16,17 @@ DEFAULT_RETRIES = 3
 DEFAULT_BACKOFF = 2
 
 
-def fetch_bytes(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT_RETRIES, extra_headers: dict[str, str] | None = None) -> bytes:
+def fetch_bytes(
+    url: str,
+    timeout: int = DEFAULT_TIMEOUT,
+    retries: int = DEFAULT_RETRIES,
+    extra_headers: dict[str, str] | None = None,
+    ssl_verify: bool = True,
+) -> bytes:
+    # ssl_verify=False disables certificate verification for sources whose
+    # CA chain is not present in the local trust store (e.g. Government of
+    # Canada PKI endpoints on some Ubuntu installations).
+    ssl_context = None if ssl_verify else ssl._create_unverified_context()
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
@@ -23,7 +34,7 @@ def fetch_bytes(url: str, timeout: int = DEFAULT_TIMEOUT, retries: int = DEFAULT
             if extra_headers:
                 hdrs.update(extra_headers)
             req = urllib.request.Request(url, headers=hdrs)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.urlopen(req, timeout=timeout, context=ssl_context) as resp:
                 return resp.read()
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
             last_error = exc

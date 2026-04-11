@@ -124,6 +124,7 @@ def scrape_generic_grant_page(
     keywords: list[str] | None = None,
     max_items: int = 20,
     fetcher=fetch_bytes,
+    ssl_verify: bool = True,
 ) -> list[dict]:
     """Scrape a grant listing page for funding opportunities.
 
@@ -132,7 +133,7 @@ def scrape_generic_grant_page(
     Filters by an optional keyword list (OR-matched against title + context).
     Does not follow individual grant links — works entirely from the listing page.
     """
-    html = fetcher(listing_url).decode("utf-8", errors="replace")
+    html = fetcher(listing_url, ssl_verify=ssl_verify).decode("utf-8", errors="replace")
     soup = BeautifulSoup(html, "html.parser")
     keyword_list = [kw.lower() for kw in (keywords or []) if kw.strip()]
 

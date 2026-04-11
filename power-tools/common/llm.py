@@ -138,6 +138,10 @@ def extract_json_payload(raw: str) -> Any:
             lines = lines[:-1]
         text = "\n".join(lines).strip()
 
+    # Escape any literal control characters inside JSON string values before
+    # attempting any json.loads — the LLM occasionally embeds raw newlines/tabs.
+    text = _sanitize_json_strings(text)
+
     array_block = _extract_balanced_json_block(text, "[", "]")
     if array_block is not None:
         return json.loads(array_block)

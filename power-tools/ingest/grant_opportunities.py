@@ -158,6 +158,7 @@ def load_web_grant_items() -> list[dict]:
                 source_name,
                 keywords=[str(v) for v in source.get("keywords", []) if str(v).strip()],
                 max_items=int(source.get("max_items", 20)),
+                ssl_verify=bool(source.get("ssl_verify", True)),
             )
         except Exception as exc:
             print(f"[grant_opportunities] WARNING: web scrape failed for {source_name!r}: {exc}", file=sys.stderr)
