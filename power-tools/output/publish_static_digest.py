@@ -567,13 +567,13 @@ def render_digest_section(digest: dict) -> str:
 
 _CSS = """
   :root {
-    --bg: #faf8f2;
-    --ink: #1a1a18;
-    --muted: #6b6560;
-    --faint: #9a9490;
-    --accent: #2d5c40;
-    --line: #d8d3cc;
-    --panel: #f3f0e8;
+    --bg: #ffffff;
+    --ink: #111110;       /* 18:1 on white */
+    --muted: #3d3a37;     /* 11:1 on white — body secondary text */
+    --faint: #5e5b57;     /* 7:1 on white — dates, labels, metadata */
+    --accent: #1b5436;    /* 8.5:1 on white — links and highlights */
+    --line: #ccc8c2;      /* decorative borders, no contrast requirement */
+    --panel: #f5f4f1;     /* hover backgrounds */
     --mono: 'JetBrains Mono','Fira Mono','Courier New',monospace;
   }
   * { box-sizing: border-box; }
@@ -629,13 +629,13 @@ _CSS = """
 
   /* ── Grant status badges ── */
   .grant-status, .grant-deadline, .grant-amount { display: inline-block; font-size: 0.68rem; font-family: var(--mono); padding: 1px 5px; line-height: 1.5; }
-  .grant-deadline { color: #7a4c0a; }
+  .grant-deadline { color: #6b3d00; } /* 8:1 on white */
   .grant-amount { color: var(--muted); }
-  .status-tracking { background: rgba(100,120,200,0.1); color: #2a3a8a; }
-  .status-drafting { background: rgba(210,143,44,0.14); color: #7a4c0a; }
-  .status-submitted { background: rgba(45,92,64,0.14); color: var(--accent); }
-  .status-awarded { background: rgba(45,150,64,0.15); color: #1a5c28; }
-  .status-declined { background: rgba(180,40,40,0.1); color: #8b1a1a; }
+  .status-tracking { background: #eef0fa; color: #1e2e7a; }   /* 9.5:1 */
+  .status-drafting { background: #fdf3e0; color: #6b3d00; }   /* 8:1 */
+  .status-submitted { background: #e6f2eb; color: #1b5436; }  /* 8.5:1 */
+  .status-awarded { background: #e2f5e8; color: #14472a; }    /* 9.5:1 */
+  .status-declined { background: #fae8e8; color: #6e1212; }   /* 9:1 */
 
   /* ── Jobs controls ── */
   .jobs-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0.75rem 0; }
@@ -847,7 +847,7 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
             link = str(item.get("link", "")).strip()
             raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
             if kind == "jobs":
-                raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or item.get("summary", "")).strip()
+                raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or "").strip()
             summary = _truncate_summary(raw_summary)
 
             if link:
