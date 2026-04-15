@@ -176,10 +176,24 @@ def render_item_list(items: list[dict], empty_text: str, score_key: str | None =
                 meta.append(f"<span class='grant-deadline'>due {_clean(item.get('deadline', ''))}</span>")
             if item.get("amount"):
                 meta.append(f"<span class='grant-amount'>{_clean(item.get('amount', ''))}</span>")
+        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        if item_type == "jobs":
+            summary = str(item.get("student_fit_reason") or item.get("llm_summary") or "").strip()
+        summary_html = ""
+        if summary:
+            summary_html = f"<p class='item-summary'>{_truncate_display(summary, 280)}</p>"
+        action_html = ""
+        if action_key and item.get(action_key):
+            label = "Next step" if action_key == "next_step" else "Recommended action"
+            action_html = f"<p class='item-action'><strong>{html.escape(label)}:</strong> {_truncate_display(item.get(action_key, ''), 180)}</p>"
         parts.append("<li>")
         parts.append(title_html)
         if meta:
             parts.append(f"<div class='item-meta'>{' &middot; '.join(meta)}</div>")
+        if summary_html:
+            parts.append(summary_html)
+        if action_html:
+            parts.append(action_html)
         parts.append("</li>")
     parts.append("</ul>")
     return "".join(parts)

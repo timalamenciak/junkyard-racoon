@@ -17,6 +17,14 @@ from common.record_utils import canonicalize_url
 from common.runtime import is_test_mode
 
 
+def _truncate_summary(text: str, limit: int = 220) -> str:
+    cleaned = " ".join(str(text or "").split())
+    if len(cleaned) <= limit:
+        return cleaned
+    truncated = cleaned[:limit].rsplit(" ", 1)[0].strip()
+    return f"{truncated}..."
+
+
 def sample_items() -> list[dict]:
     return [
         {
@@ -59,6 +67,7 @@ def sample_items() -> list[dict]:
 
 
 def _normalize_email_job_item(message: dict, parsed: dict) -> dict:
+    summary = parsed.get("summary") or message.get("summary") or message.get("body_text") or ""
     return {
         "source_type": "job_email",
         "source": message.get("route_name", message.get("mailbox", "Email")),
@@ -71,7 +80,7 @@ def _normalize_email_job_item(message: dict, parsed: dict) -> dict:
         "published": message.get("published", "unknown"),
         "category": parsed.get("category", "").strip(),
         "link": canonicalize_url(parsed.get("link", "").strip()) or parsed.get("link", "").strip(),
-        "summary": (parsed.get("summary") or message.get("summary") or message.get("body_text") or "")[:1200],
+        "summary": _truncate_summary(summary),
         "tags": list(message.get("tags", [])),
         "gmail_label": message.get("gmail_label", ""),
         "message_id": message.get("message_id", ""),

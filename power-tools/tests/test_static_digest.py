@@ -21,23 +21,19 @@ def test_daily_digest_includes_news(monkeypatch, tmp_path) -> None:
     processing_dir.mkdir(parents=True)
     output_dir.mkdir(parents=True)
 
-    (ingest_dir / "news_items.json").write_text(
-        json.dumps(
-            {
-                "relevant_items": [
-                    {
-                        "title": "Wetland restoration partnership announced",
-                        "summary": "A new biodiversity restoration partnership was announced.",
-                        "link": "https://example.org/news/wetland-restoration",
-                    }
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
     for name, payload in {
+        "news_items.json": {"items": []},
         "job_openings.json": {"items": []},
         "collaborator_publications.json": {"items": []},
+        "scored_news.json": {
+            "relevant_items": [
+                {
+                    "title": "Wetland restoration partnership announced",
+                    "summary": "A new biodiversity restoration partnership was announced.",
+                    "link": "https://example.org/news/wetland-restoration",
+                }
+            ]
+        },
         "scored_articles.json": {"relevant_items": []},
         "scored_grants.json": {"relevant_items": []},
         "obsidian_todos.json": {"items": []},
@@ -108,6 +104,46 @@ def test_daily_digest_routes_articles_into_mastodon_toots(monkeypatch, tmp_path)
     assert "https://example.org/article/restoration-wetlands" in digest["mastodon_toots"][0]
 
 
+def test_daily_digest_does_not_fallback_to_raw_jobs_when_scored_relevant_items_are_empty(monkeypatch, tmp_path) -> None:
+    ingest_dir = tmp_path / "ingest"
+    processing_dir = tmp_path / "processing"
+    output_dir = tmp_path / "output"
+    ingest_dir.mkdir(parents=True)
+    processing_dir.mkdir(parents=True)
+    output_dir.mkdir(parents=True)
+
+    for name, payload in {
+        "news_items.json": {"relevant_items": []},
+        "collaborator_publications.json": {"items": []},
+        "job_openings.json": {
+            "items": [
+                {
+                    "title": "Restoration Ecologist",
+                    "summary": "Full newsletter body " * 40,
+                    "link": "https://example.org/jobs/restoration-ecologist",
+                }
+            ]
+        },
+        "scored_grants.json": {"relevant_items": []},
+        "scored_jobs.json": {"items": [{"title": "Restoration Ecologist"}], "relevant_items": []},
+        "obsidian_todos.json": {"items": []},
+        "scored_articles.json": {"relevant_items": []},
+        "scored_news.json": {"relevant_items": []},
+    }.items():
+        target = processing_dir / name if name.startswith("scored_") or name.startswith("obsidian") else ingest_dir / name
+        target.write_text(json.dumps(payload), encoding="utf-8")
+
+    monkeypatch.setattr(daily_digest, "INGEST_DIR", ingest_dir)
+    monkeypatch.setattr(daily_digest, "PROCESSING_DIR", processing_dir)
+    monkeypatch.setattr(daily_digest, "OUTPUT_DIR", output_dir)
+    monkeypatch.setattr(daily_digest, "is_test_mode", lambda: True)
+
+    daily_digest.main()
+
+    digest = json.loads((output_dir / "daily_digest.json").read_text(encoding="utf-8"))
+    assert digest["open_jobs"] == []
+
+
 def test_static_digest_publisher_builds_rolling_history_and_jobs_table(monkeypatch, tmp_path) -> None:
     output_dir = tmp_path / "output"
     state_dir = tmp_path / "state"
@@ -140,8 +176,24 @@ def test_static_digest_publisher_builds_rolling_history_and_jobs_table(monkeypat
             {
                 "date": "2026-03-26",
                 "relevant_news": [{"title": "News item", "summary": "Summary", "link": "https://example.org/news"}],
-                "relevant_articles": [{"title": "Article item", "relevance_score": 0.9, "recommended_action": "Review", "link": "https://example.org/article"}],
-                "relevant_grants": [{"title": "Grant item", "relevance_score": 0.8, "next_step": "Review", "link": "https://example.org/grant"}],
+                "relevant_articles": [
+                    {
+                        "title": "Article item",
+                        "llm_summary": "A concise LLM summary for the article.",
+                        "relevance_score": 0.9,
+                        "recommended_action": "Review",
+                        "link": "https://example.org/article",
+                    }
+                ],
+                "relevant_grants": [
+                    {
+                        "title": "Grant item",
+                        "llm_summary": "A concise LLM summary for the grant.",
+                        "relevance_score": 0.8,
+                        "next_step": "Review",
+                        "link": "https://example.org/grant",
+                    }
+                ],
                 "prioritized_todos": [
                     {
                         "task": "Confirm the shortlist of papers for journal club.",
@@ -157,9 +209,12 @@ def test_static_digest_publisher_builds_rolling_history_and_jobs_table(monkeypat
                         "location": "Victoria, BC",
                         "pay": "$72,000-$85,000 /year",
                         "student_relevance_score": 0.91,
+                        "student_fit_reason": "Strong field and restoration fit for lab trainees.",
+                        "summary": "This long raw description should not be used in the jobs summary area.",
                         "posted_date": "Mar 24, 2026",
                         "application_deadline": "Apr 15, 2026",
                         "link": "https://example.org/jobs/restoration-ecologist",
+                        "student_tags": ["restoration", "fieldwork"],
                     }
                 ],
             }
@@ -176,12 +231,42 @@ def test_static_digest_publisher_builds_rolling_history_and_jobs_table(monkeypat
 
     index_html = (site_dir / "index.html").read_text(encoding="utf-8")
     daily_html = (site_dir / "2026-03-26.html").read_text(encoding="utf-8")
-    assert "Open Jobs" in index_html
+    assert "Jobs Board" in index_html
     assert "Restoration Ecologist" in index_html
     assert "2026-03-26" in index_html
-    assert "Priority Tasks" in index_html
-    assert "Confirm the shortlist of papers for journal club." in index_html
-    assert ".todo-list" in daily_html
-    assert "Priority Tasks" in daily_html
-    assert "Confirm the shortlist of papers for journal club." in daily_html
+    assert "A concise LLM summary for the article." in daily_html
+    assert "A concise LLM summary for the grant." in daily_html
+    assert "Strong field and restoration fit for lab trainees." in index_html
+    assert "This long raw description should not be used in the jobs summary area." not in index_html
+    assert "Confirm the shortlist of papers for journal club." not in daily_html
     assert (site_dir / "2026-03-26.html").exists()
+
+
+def test_render_digest_section_includes_summaries_and_actions() -> None:
+    html = publish_static_digest.render_digest_section(
+        {
+            "date": "2026-03-26",
+            "relevant_news": [{"title": "News item", "summary": "News summary"}],
+            "relevant_articles": [
+                {
+                    "title": "Article item",
+                    "llm_summary": "Article summary",
+                    "recommended_action": "Review for journal club",
+                }
+            ],
+            "relevant_grants": [
+                {
+                    "title": "Grant item",
+                    "llm_summary": "Grant summary",
+                    "next_step": "Draft a note",
+                }
+            ],
+            "prioritized_todos": [],
+        }
+    )
+
+    assert "News summary" in html
+    assert "Article summary" in html
+    assert "Recommended action:" in html
+    assert "Grant summary" in html
+    assert "Next step:" in html

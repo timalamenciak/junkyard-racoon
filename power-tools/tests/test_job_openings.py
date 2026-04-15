@@ -77,6 +77,42 @@ def test_load_email_job_items_reads_jobs_target() -> None:
     assert all(item["gmail_label"] == "jobs" for item in items)
 
 
+def test_load_email_job_items_truncates_fallback_summary() -> None:
+    dump_json(
+        INGEST_DIR / "email_messages.json",
+        {
+            "generated_at": "2026-03-26T00:00:00+00:00",
+            "items": [
+                {
+                    "target": "job_openings",
+                    "route_name": "jobs",
+                    "mailbox": "jobs",
+                    "gmail_label": "jobs",
+                    "message_id": "<jobs-long@example.org>",
+                    "subject": "Restoration jobs digest",
+                    "from": "Jobs Digest <alerts@example.org>",
+                    "published": "2026-03-26T00:00:00+00:00",
+                    "summary": "",
+                    "body_text": (
+                        "Restoration Ecologist at Coastal Conservation Trust. "
+                        + " ".join(["This newsletter includes a restoration ecology role with fieldwork expectations."] * 20)
+                        + " https://example.org/jobs/restoration-ecologist"
+                    ),
+                    "body_html": "",
+                    "body_html_text": "",
+                    "tags": ["email", "jobs"],
+                }
+            ],
+        },
+    )
+
+    items = job_openings.load_email_job_items()
+
+    assert len(items) == 1
+    assert len(items[0]["summary"]) <= 223
+    assert items[0]["summary"].endswith("...")
+
+
 def test_publish_hedgedoc_tracks_jobs_records_in_test_mode(monkeypatch, tmp_path) -> None:
     output_dir = tmp_path / "output"
     state_dir = tmp_path / "state"

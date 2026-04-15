@@ -124,7 +124,7 @@ def main() -> None:
     relevant_articles = scored_articles.get("relevant_items", [])[:10]
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
     collaborator_items = [item for item in publications.get("items", []) if not item.get("error")][:10]
-    open_jobs = scored_jobs.get("relevant_items", []) or jobs.get("items", [])
+    open_jobs = scored_jobs.get("relevant_items", [])
 
     lines = [f"# Daily Lab Digest - {date_str}", ""]
     lines.append("## Research News")
