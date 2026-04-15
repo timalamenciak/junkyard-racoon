@@ -116,7 +116,6 @@ def main() -> None:
     scored_grants = load_json(PROCESSING_DIR / "scored_grants.json", default={})
     scored_news = load_json(PROCESSING_DIR / "scored_news.json", default={})
     scored_jobs = load_json(PROCESSING_DIR / "scored_jobs.json", default={})
-    todos = load_json(PROCESSING_DIR / "obsidian_todos.json", default={})
     publications = load_json(INGEST_DIR / "collaborator_publications.json", default={})
     jobs = load_json(INGEST_DIR / "job_openings.json", default={})
     date_str = datetime.date.today().isoformat()
@@ -124,7 +123,6 @@ def main() -> None:
     relevant_news = scored_news.get("relevant_items", [])[:10]
     relevant_articles = scored_articles.get("relevant_items", [])[:10]
     relevant_grants = scored_grants.get("relevant_items", [])[:10]
-    prioritized_todos = todos.get("items", [])[:20]
     collaborator_items = [item for item in publications.get("items", []) if not item.get("error")][:10]
     open_jobs = scored_jobs.get("relevant_items", []) or jobs.get("items", [])
 
@@ -172,25 +170,6 @@ def main() -> None:
         lines.append("- No recent collaborator publications captured.")
 
     lines.append("")
-    lines.append("## Project Todos Requiring Attention")
-    if prioritized_todos:
-        for todo in prioritized_todos:
-            lines.append(f"- [{todo.get('priority', 'medium')}] {todo.get('task', '')}")
-            if todo.get("project"):
-                lines.append(f"  Project: {todo.get('project', '')}")
-            if todo.get("owner_guess"):
-                lines.append(f"  Likely owner: {todo.get('owner_guess', '')}")
-            if todo.get("deadline_guess"):
-                lines.append(f"  Deadline cue: {todo.get('deadline_guess', '')}")
-            if todo.get("impact") or todo.get("effort"):
-                lines.append(f"  Impact/Effort: {todo.get('impact', 'unknown')}/{todo.get('effort', 'unknown')}")
-            if todo.get("rationale"):
-                lines.append(f"  Why now: {todo.get('rationale', '')}")
-            lines.append(f"  {todo.get('note', '')}")
-    else:
-        lines.append("- No priority project tasks extracted from Obsidian notes.")
-
-    lines.append("")
     lines.append("## Job Openings")
     if open_jobs:
         academic_count = len([item for item in open_jobs if item.get("category") == "academic"])
@@ -227,7 +206,6 @@ def main() -> None:
         "relevant_news": relevant_news,
         "relevant_articles": relevant_articles,
         "relevant_grants": relevant_grants,
-        "prioritized_todos": prioritized_todos,
         "collaborator_publications": collaborator_items,
         "open_jobs": open_jobs,
         "mastodon_toots": mastodon_toots,
@@ -286,7 +264,6 @@ def main() -> None:
         "articles_count": len(relevant_articles),
         "news_count": len(relevant_news),
         "grants_count": len(relevant_grants),
-        "todos_count": len(prioritized_todos),
         "items": homepage_items,
     }
     dump_json(OUTPUT_DIR / "homepage_feed.json", homepage_feed)

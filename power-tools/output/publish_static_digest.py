@@ -567,182 +567,130 @@ def render_digest_section(digest: dict) -> str:
 
 _CSS = """
   :root {
-    --bg:#ede6d8; --bg-deep:#d9cfbe; --panel:#fffaf0; --panel-strong:#f6eedf;
-    --ink:#211f1a; --muted:#655d52; --line:#d4c4aa;
-    --accent:#2d5c40; --accent-soft:#dce8df; --accent-glow:rgba(45,92,64,0.22);
-    --scrap:#7e5738; --night:#1a1f24; --sun:#d28f2c;
-    --mono:'JetBrains Mono','Fira Mono','Courier New',monospace;
-    --radius:20px;
+    --bg: #faf8f2;
+    --ink: #1a1a18;
+    --muted: #6b6560;
+    --faint: #9a9490;
+    --accent: #2d5c40;
+    --line: #d8d3cc;
+    --panel: #f3f0e8;
+    --mono: 'JetBrains Mono','Fira Mono','Courier New',monospace;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:Georgia,"Times New Roman",serif;background:radial-gradient(circle at top,rgba(210,143,44,0.14),transparent 22%),linear-gradient(180deg,#f5efe2 0%,var(--bg) 48%,var(--bg-deep) 100%);color:var(--ink);}
-  a{color:var(--accent);}
-  code{font-family:var(--mono);font-size:0.82em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.18);border-radius:5px;padding:1px 5px;color:var(--accent);}
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: Georgia,'Times New Roman',serif; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-size: 1rem; line-height: 1.65; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: var(--mono); font-size: 0.82em; color: var(--muted); }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2rem 0; }
+  h1, h2, h3 { font-weight: normal; }
+  .empty { color: var(--muted); font-size: 0.9rem; }
 
-  /* ── Layout ── */
-  .layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
-  .sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:24px 20px;
-    background:linear-gradient(180deg,#181d21 0%,#222c33 55%,#2d5c40 100%);
-    color:#f4efe6;border-right:1px solid rgba(255,255,255,0.06);}
-  .sidebar a{color:#f6ead3;text-decoration:none;}
-  .sidebar a:hover{color:#a3e4b0;}
-  .sidebar ul{list-style:none;padding:0;margin:10px 0 0;}
-  .sidebar li{margin:0 0 8px;}
-  .sidebar .nav-caption{color:#8aab96;text-transform:uppercase;letter-spacing:0.12em;font-size:0.68rem;margin:24px 0 8px;font-family:var(--mono);}
-  .sidebar-brand{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:#5ec47a;margin-bottom:6px;}
-  .sidebar h1{margin:0 0 6px;font-size:1.4rem;color:#f4efe6;}
-  .sidebar-meta{font-size:0.8rem;color:#8aab96;font-family:var(--mono);}
-  .content{padding:36px;}
+  /* ── Site header ── */
+  .site-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.4rem; }
+  .site-title { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); }
+  .site-title a { color: var(--muted); }
+  .site-title a:hover { color: var(--accent); text-decoration: none; }
+  .site-date { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+  .site-nav { display: flex; flex-wrap: wrap; gap: 0 1.25rem; margin: 0.6rem 0 0; }
+  .site-nav a { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .site-nav a:hover { color: var(--accent); text-decoration: none; }
 
-  /* ── Cards ── */
-  .hero,.digest-card,.jobs-card{background:rgba(255,250,240,0.92);border:1px solid rgba(126,87,56,0.18);border-radius:var(--radius);padding:26px;box-shadow:0 18px 44px rgba(44,31,18,0.08);margin-bottom:24px;backdrop-filter:blur(10px);}
-  .hero{position:relative;overflow:hidden;padding:30px;background:linear-gradient(135deg,rgba(255,250,240,0.96),rgba(244,232,214,0.92));}
-  .hero:after{content:"";position:absolute;inset:auto -60px -70px auto;width:240px;height:240px;background:radial-gradient(circle,var(--accent-glow),transparent 65%);}
-  .hero-copy{max-width:700px;position:relative;z-index:1;}
-  .hero p,.meta,.empty{color:var(--muted);}
-  .brand-kicker{display:inline-block;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--scrap);margin-bottom:10px;font-family:var(--mono);}
-  .hero-shell{display:flex;gap:28px;align-items:center;justify-content:space-between;}
-  .hero h1{margin:0 0 10px;font-size:clamp(2rem,4vw,3rem);line-height:1.1;}
-  .hero-lede{font-size:1rem;max-width:58ch;}
-  .raccoon-badge{width:160px;min-width:160px;filter:drop-shadow(0 16px 22px rgba(33,31,26,0.18));}
+  /* ── Today's briefing ── */
+  .briefing h2 { font-size: 1.05rem; margin: 0 0 1.5rem; border-bottom: 1px solid var(--ink); padding-bottom: 0.35rem; }
+  .briefing-section { margin-bottom: 1.5rem; }
+  .briefing-section h3 { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin: 0 0 0.6rem; }
+  .briefing-list { list-style: none; padding: 0; margin: 0; }
+  .briefing-list li { padding: 0.55rem 0; border-bottom: 1px dotted var(--line); }
+  .briefing-list li:last-child { border-bottom: none; }
+  .briefing-item-title { font-size: 0.95rem; line-height: 1.4; }
+  .briefing-item-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); margin: 0.15rem 0 0.25rem; }
+  .briefing-item-summary { font-size: 0.86rem; color: var(--muted); margin: 0; line-height: 1.5; }
 
-  /* ── Metric chips ── */
-  .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px;position:relative;z-index:1;}
-  .metric-chip{background:rgba(255,255,255,0.55);border:1px solid rgba(45,92,64,0.14);border-radius:14px;padding:14px 16px;}
-  .metric-chip span{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}
-  .metric-chip strong{display:block;margin-top:6px;font-size:1.5rem;color:var(--night);font-family:var(--mono);}
+  /* ── Archive sections ── */
+  .archive-section { margin-top: 2rem; }
+  .archive-section > h2 { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
+  .archive-section > h2::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+  .count-badge { font-size: 0.68rem; color: var(--faint); font-weight: normal; }
 
-  /* ── Section headings ── */
-  .jobs-card h2,.digest-card h2{margin-top:0;}
-  .section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;}
-  .section-tag{padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:0.75rem;font-family:var(--mono);letter-spacing:0.06em;}
-
-  /* ── Jobs controls ── */
-  .jobs-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 14px;}
-  .search-wrap{position:relative;flex:1;min-width:200px;max-width:360px;}
-  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none;}
-  .job-search{width:100%;padding:9px 32px 9px 34px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:0.9rem;font-family:var(--mono);color:var(--ink);outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-  .job-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
-  .clear-search{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;line-height:1;display:none;}
-  .clear-search.visible{display:block;}
-  .tag-filter-row{display:flex;flex-wrap:wrap;gap:6px;}
-  .tag-chip{display:inline-block;padding:5px 11px;border-radius:999px;background:rgba(45,92,64,0.08);border:1px solid rgba(45,92,64,0.2);color:var(--accent);font-size:0.75rem;font-family:var(--mono);cursor:pointer;transition:background 0.15s,border-color 0.15s;line-height:1;}
-  .tag-chip:hover{background:rgba(45,92,64,0.16);}
-  .tag-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .jobs-count{font-size:0.78rem;font-family:var(--mono);color:var(--muted);align-self:center;}
-
-  /* ── Jobs table ── */
-  .jobs-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:16px;overflow:hidden;table-layout:fixed;}
-  .jobs-table th,.jobs-table td{border-bottom:1px solid rgba(126,87,56,0.15);padding:11px 13px;text-align:left;vertical-align:top;}
-  .jobs-table thead th{background:linear-gradient(180deg,#e0ead9,#d2e0d3);font-size:0.76rem;letter-spacing:0.08em;text-transform:uppercase;color:#2d5c40;font-family:var(--mono);cursor:pointer;user-select:none;white-space:nowrap;}
-  .jobs-table thead th:hover{background:linear-gradient(180deg,#d2e0d3,#c5d9c7);}
-  .jobs-table thead th .sort-icon{display:inline-block;width:12px;margin-left:4px;opacity:0.4;}
-  .jobs-table thead th.sort-asc .sort-icon::after{content:'▲';}
-  .jobs-table thead th.sort-desc .sort-icon::after{content:'▼';}
-  .jobs-table thead th.sort-asc .sort-icon,.jobs-table thead th.sort-desc .sort-icon{opacity:1;color:var(--accent);}
-  .jobs-table tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.48);}
-  .jobs-table tbody tr:nth-child(even) td{background:rgba(246,238,223,0.72);}
-  .jobs-table tbody tr:hover td{background:rgba(45,92,64,0.07);}
-  .jobs-table tbody tr.hidden{display:none;}
-  .jobs-table td{overflow-wrap:anywhere;}
-  .score-badge{font-family:var(--mono);font-size:0.8em;background:rgba(45,92,64,0.12);border:1px solid rgba(45,92,64,0.22);border-radius:5px;padding:2px 6px;color:var(--accent);}
-  .fit-cell .score-badge{display:block;margin-bottom:4px;}
-  .fit-cell span{display:block;margin-top:2px;color:var(--muted);font-size:0.88rem;}
-  .tags-cell{min-width:160px;}
-  .job-tag{display:inline-block;margin:0 4px 4px 0;padding:3px 8px;border-radius:999px;background:rgba(45,92,64,0.1);color:var(--accent);font-size:0.72rem;font-family:var(--mono);line-height:1;border:1px solid rgba(45,92,64,0.15);}
-  .empty-cell{color:var(--muted);text-align:center;padding:24px;}
-
-  /* ── Digest grid ── */
-  .digest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:16px;border-top:1px solid var(--line);}
-  .column-card{padding:16px 20px;border-right:1px solid var(--line);}
-  .column-card:last-child{border-right:none;}
-  .column-card h3{margin:0 0 10px;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}
-  .item-list{list-style:disc;padding:0 0 0 18px;margin:0;}
-  .item-list li{padding:2px 0 4px;margin:0;line-height:1.45;color:var(--ink);}
-  .item-list a{color:var(--ink);font-weight:normal;text-decoration:none;}
-  .item-list a:hover{color:var(--accent);text-decoration:underline;}
-  .jobs-table a{font-weight:700;text-decoration:none;}
-  .jobs-table a:hover{text-decoration:underline;}
-  .item-meta{font-size:0.78rem;color:var(--muted);margin:1px 0 4px;line-height:1.3;}
-
-  /* ── Responsive ── */
-  @media(max-width:1120px){
-    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
-    .hero-shell{flex-direction:column;align-items:flex-start;}
-    .raccoon-badge{width:120px;min-width:120px;}
-  }
-  @media(max-width:980px){
-    .layout{grid-template-columns:1fr;}
-    .sidebar{position:relative;height:auto;}
-    .digest-grid{grid-template-columns:1fr;}
-    .column-card{border-right:none;border-bottom:1px solid var(--line);}
-    .column-card:last-child{border-bottom:none;}
-    .content{padding:16px;}
-    .metrics{grid-template-columns:1fr 1fr;}
-  }
-  @media(max-width:760px){
-    .metrics{grid-template-columns:1fr;}
-    .jobs-controls{flex-direction:column;align-items:stretch;}
-    .search-wrap{max-width:100%;}
-    .jobs-table,.jobs-table thead,.jobs-table tbody,.jobs-table th,.jobs-table td,.jobs-table tr{display:block;width:100%;}
-    .jobs-table thead{display:none;}
-    .jobs-table tbody tr{margin-bottom:14px;border:1px solid rgba(126,87,56,0.18);border-radius:14px;overflow:hidden;}
-    .jobs-table tbody tr.hidden{display:none;}
-    .jobs-table td{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:10px 12px;}
-    .jobs-table td::before{content:attr(data-label);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}
-    .todo-list{flex-direction:column;}
-    .todo-item{flex:1 1 auto;}
-  }
-
-  /* ── Todo list ── */
-  .todos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;}
-  .todos-section h3{margin:0 0 14px;font-size:1rem;}
-  .todo-list{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;}
-  .todo-item{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;flex:1 1 280px;}
-  .todo-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.68rem;font-family:var(--mono);letter-spacing:0.07em;text-transform:uppercase;line-height:1.5;flex-shrink:0;}
-  .todo-high{background:rgba(210,143,44,0.18);color:#7a4c0a;border:1px solid rgba(210,143,44,0.3);}
-  .todo-urgent{background:rgba(180,40,40,0.12);color:#8b1a1a;border:1px solid rgba(180,40,40,0.22);}
-  .todo-medium{background:rgba(45,92,64,0.1);color:var(--accent);border:1px solid rgba(45,92,64,0.2);}
-  .todo-low{background:rgba(100,100,100,0.07);color:var(--muted);border:1px solid rgba(100,100,100,0.14);}
-  .todo-task{font-size:0.93rem;flex:1 1 200px;}
-  .todo-project{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}
-  .todo-note{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}
-
-  /* ── Content card (generic section wrapper) ── */
-  .content-card{background:rgba(255,250,240,0.92);border:1px solid rgba(126,87,56,0.18);border-radius:var(--radius);padding:26px;box-shadow:0 18px 44px rgba(44,31,18,0.08);margin-bottom:24px;}
-
-  /* ── Digest tables (news / articles / grants) ── */
-  .digest-table{width:100%;border-collapse:collapse;font-size:0.92rem;}
-  .digest-table th{text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);font-weight:normal;padding:6px 10px 8px;border-bottom:2px solid var(--line);}
-  .digest-table td{padding:7px 10px;border-bottom:1px solid rgba(212,196,170,0.4);vertical-align:top;}
-  .digest-table tbody tr:hover td{background:rgba(45,92,64,0.04);}
-  .digest-table a{color:var(--ink);text-decoration:none;}
-  .digest-table a:hover{color:var(--accent);text-decoration:underline;}
-  .date-cell{white-space:nowrap;color:var(--muted);font-size:0.8rem;font-family:var(--mono);width:100px;}
-  .muted-cell{color:var(--muted);font-size:0.85rem;}
+  /* ── Archive tables ── */
+  .digest-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .digest-table th { text-align: left; font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); padding: 4px 8px 8px; border-bottom: 1px solid var(--line); font-weight: normal; }
+  .digest-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .digest-table tbody tr:hover td { background: var(--panel); }
+  .digest-table a { color: var(--ink); }
+  .digest-table a:hover { color: var(--accent); text-decoration: underline; }
+  .date-cell { white-space: nowrap; color: var(--faint); font-family: var(--mono); font-size: 0.72rem; width: 88px; }
+  .muted-cell { color: var(--muted); font-size: 0.82rem; }
 
   /* ── Hover tooltip ── */
-  .tip{position:relative;display:inline;}
-  .tip .tip-text{display:none;position:absolute;left:0;top:calc(100% + 4px);background:#23262b;color:#f4efe6;padding:8px 12px;border-radius:8px;font-size:0.8rem;line-height:1.5;width:320px;max-width:80vw;white-space:normal;z-index:200;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,0.3);}
-  .tip:hover .tip-text{display:block;}
+  .tip { position: relative; display: inline; }
+  .tip .tip-text { display: none; position: absolute; left: 0; top: calc(100% + 4px); background: #23262b; color: #f4efe6; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; line-height: 1.5; width: 300px; max-width: 80vw; white-space: normal; z-index: 200; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.25); font-family: Georgia,serif; }
+  .tip:hover .tip-text { display: block; }
 
-  /* ── Mastodon toots ── */
-  .toot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:16px;}
-  .toot-card{background:var(--panel-strong);border:1px solid rgba(126,87,56,0.12);border-radius:14px;padding:14px 16px;font-size:0.9rem;line-height:1.55;}
-  .toot-card p{margin:0 0 8px;}
-  .toot-link{font-size:0.75rem;font-family:var(--mono);color:var(--muted);text-decoration:none;}
-  .toot-link:hover{color:var(--accent);}
+  /* ── Grant status badges ── */
+  .grant-status, .grant-deadline, .grant-amount { display: inline-block; font-size: 0.68rem; font-family: var(--mono); padding: 1px 5px; line-height: 1.5; }
+  .grant-deadline { color: #7a4c0a; }
+  .grant-amount { color: var(--muted); }
+  .status-tracking { background: rgba(100,120,200,0.1); color: #2a3a8a; }
+  .status-drafting { background: rgba(210,143,44,0.14); color: #7a4c0a; }
+  .status-submitted { background: rgba(45,92,64,0.14); color: var(--accent); }
+  .status-awarded { background: rgba(45,150,64,0.15); color: #1a5c28; }
+  .status-declined { background: rgba(180,40,40,0.1); color: #8b1a1a; }
 
-  /* ── Manual grant badges ── */
-  .manual-grant-marker{font-size:0.7rem;font-family:var(--mono);color:var(--scrap);margin-right:4px;}
-  .grant-status,.grant-deadline,.grant-amount{display:inline-block;font-size:0.72rem;font-family:var(--mono);border-radius:999px;padding:2px 8px;line-height:1.5;}
-  .grant-deadline{background:rgba(210,143,44,0.12);color:#7a4c0a;border:1px solid rgba(210,143,44,0.25);}
-  .grant-amount{background:rgba(45,92,64,0.08);color:var(--accent);border:1px solid rgba(45,92,64,0.18);}
-  .status-tracking{background:rgba(100,120,200,0.1);color:#2a3a8a;border:1px solid rgba(100,120,200,0.25);}
-  .status-drafting{background:rgba(210,143,44,0.14);color:#7a4c0a;border:1px solid rgba(210,143,44,0.28);}
-  .status-submitted{background:rgba(45,92,64,0.14);color:var(--accent);border:1px solid rgba(45,92,64,0.25);}
-  .status-awarded{background:rgba(45,150,64,0.15);color:#1a5c28;border:1px solid rgba(45,150,64,0.3);}
-  .status-declined{background:rgba(180,40,40,0.1);color:#8b1a1a;border:1px solid rgba(180,40,40,0.2);}
+  /* ── Jobs controls ── */
+  .jobs-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0.75rem 0; }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 320px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 0.9rem; pointer-events: none; }
+  .job-search { width: 100%; padding: 6px 28px 6px 28px; border: 1px solid var(--line); border-radius: 3px; background: #fff; font-size: 0.84rem; font-family: var(--mono); color: var(--ink); outline: none; }
+  .job-search:focus { border-color: var(--accent); }
+  .clear-search { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--faint); cursor: pointer; font-size: 0.8rem; padding: 2px 4px; display: none; }
+  .clear-search.visible { display: block; }
+  .tag-filter-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag-chip { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); color: var(--muted); font-size: 0.68rem; font-family: var(--mono); cursor: pointer; background: transparent; transition: background 0.1s; }
+  .tag-chip:hover { background: var(--panel); }
+  .tag-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .jobs-count { font-size: 0.7rem; font-family: var(--mono); color: var(--faint); }
+
+  /* ── Jobs table ── */
+  .jobs-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; table-layout: fixed; }
+  .jobs-table th, .jobs-table td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+  .jobs-table thead th { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); font-weight: normal; cursor: pointer; user-select: none; white-space: nowrap; padding-bottom: 10px; }
+  .jobs-table thead th:hover { color: var(--ink); }
+  .jobs-table thead th .sort-icon { display: inline-block; width: 12px; margin-left: 3px; opacity: 0.4; }
+  .jobs-table thead th.sort-asc .sort-icon::after { content: '▲'; }
+  .jobs-table thead th.sort-desc .sort-icon::after { content: '▼'; }
+  .jobs-table thead th.sort-asc .sort-icon, .jobs-table thead th.sort-desc .sort-icon { opacity: 1; color: var(--accent); }
+  .jobs-table tbody tr:hover td { background: var(--panel); }
+  .jobs-table tbody tr.hidden { display: none; }
+  .jobs-table td { overflow-wrap: anywhere; }
+  .jobs-table a { color: var(--ink); font-weight: normal; }
+  .jobs-table a:hover { color: var(--accent); text-decoration: underline; }
+  .score-badge { font-family: var(--mono); font-size: 0.75em; color: var(--accent); }
+  .fit-cell .score-badge { display: block; margin-bottom: 2px; }
+  .fit-cell span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.82rem; }
+  .tags-cell { min-width: 120px; }
+  .job-tag { display: inline-block; margin: 0 3px 3px 0; padding: 1px 6px; border: 1px solid var(--line); color: var(--muted); font-size: 0.68rem; font-family: var(--mono); }
+  .empty-cell { color: var(--muted); text-align: center; padding: 20px; }
+
+  /* ── Daily page item list ── */
+  .day-section { margin-bottom: 1.75rem; }
+  .day-section h3 { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin: 0 0 0.6rem; }
+  .day-list { list-style: none; padding: 0; margin: 0; }
+  .day-list li { padding: 0.55rem 0; border-bottom: 1px dotted var(--line); }
+  .day-list li:last-child { border-bottom: none; }
+  .day-item-title { font-size: 0.95rem; line-height: 1.4; }
+  .day-item-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); margin: 0.15rem 0 0.25rem; }
+  .day-item-summary { font-size: 0.86rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  @media (max-width: 700px) {
+    body { padding: 1rem 1rem 3rem; }
+    .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr { display: block; width: 100%; }
+    .jobs-table thead { display: none; }
+    .jobs-table tbody tr { margin-bottom: 12px; border: 1px solid var(--line); }
+    .jobs-table tbody tr.hidden { display: none; }
+    .jobs-table td { display: grid; grid-template-columns: 100px 1fr; gap: 6px; padding: 7px 8px; }
+    .jobs-table td::before { content: attr(data-label); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); font-family: var(--mono); padding-top: 2px; }
+  }
 """
 
 _JS = """
@@ -847,6 +795,128 @@ _JS = """
 """
 
 
+def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
+    """Render today's top items (news, papers, grants, jobs), excluding repeats from previous days."""
+    if not digests:
+        return "<p class='empty'>No digest available yet.</p>"
+
+    today = digests[0]
+    today_date = today.get("date", "")
+
+    # Collect links and normalised titles seen in all previous digests
+    previous_seen: set[str] = set()
+    for digest in digests[1:]:
+        for key in ("relevant_news", "relevant_articles", "relevant_grants"):
+            for item in digest.get(key, []):
+                link = str(item.get("link", "")).strip()
+                title = str(item.get("title", "")).strip().lower()
+                if link:
+                    previous_seen.add(link)
+                if title:
+                    previous_seen.add(title)
+
+    def is_new(item: dict) -> bool:
+        link = str(item.get("link", "")).strip()
+        title = str(item.get("title", "")).strip().lower()
+        return link not in previous_seen and title not in previous_seen
+
+    news_new = [i for i in today.get("relevant_news", []) if is_new(i)][:5]
+    articles_new = [i for i in today.get("relevant_articles", []) if is_new(i)][:5]
+    grants_new = [i for i in today.get("relevant_grants", []) if is_new(i)][:5]
+    # Jobs: only those first surfaced today
+    jobs_new = [j for j in jobs if j.get("first_seen_date") == today_date][:4]
+    # Fallback: top-scored jobs if none are new today
+    if not jobs_new and jobs:
+        jobs_new = sorted(jobs, key=lambda j: float(j.get("student_relevance_score", 0) or 0), reverse=True)[:3]
+
+    def _truncate_summary(text: str, limit: int = 300) -> str:
+        text = str(text or "").strip()
+        if not text:
+            return ""
+        if len(text) <= limit:
+            return text
+        cut = text[:limit].rsplit(".", 1)
+        return cut[0].strip() + "." if len(cut) > 1 else text[:limit].rsplit(" ", 1)[0].strip() + "…"
+
+    def render_briefing_section(label: str, items: list[dict], kind: str) -> str:
+        if not items:
+            return ""
+        parts = [f"<div class='briefing-section'><h3>{html.escape(label)}</h3><ul class='briefing-list'>"]
+        for item in items:
+            title = _clean(item.get("title", "Untitled"))
+            link = str(item.get("link", "")).strip()
+            raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+            if kind == "jobs":
+                raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or item.get("summary", "")).strip()
+            summary = _truncate_summary(raw_summary)
+
+            if link:
+                title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+            else:
+                title_html = title
+
+            meta_parts: list[str] = []
+            if kind == "news":
+                source = _clean(item.get("feed", "") or item.get("source", ""))
+                if source:
+                    meta_parts.append(source)
+            elif kind == "papers":
+                journal = _clean(item.get("journal_name", "") or item.get("feed", ""))
+                try:
+                    score_str = f"{int(float(item.get('relevance_score', 0)) * 100)}% fit"
+                    meta_parts.append(score_str)
+                except Exception:
+                    pass
+                if journal:
+                    meta_parts.append(journal)
+            elif kind == "grants":
+                deadline = _clean(item.get("deadline", "") or item.get("application_deadline", ""))
+                amount = _clean(item.get("amount", ""))
+                if deadline:
+                    meta_parts.append(f"due {deadline}")
+                if amount:
+                    meta_parts.append(amount)
+            elif kind == "jobs":
+                org = _clean(item.get("organization", ""))
+                location = _clean(item.get("location", ""))
+                if org:
+                    meta_parts.append(org)
+                if location:
+                    meta_parts.append(location)
+
+            meta_html = f"<div class='briefing-item-meta'>{' · '.join(meta_parts)}</div>" if meta_parts else ""
+            summary_html = f"<p class='briefing-item-summary'>{html.escape(summary)}</p>" if summary else ""
+
+            parts.append(
+                "<li>"
+                f"<div class='briefing-item-title'>{title_html}</div>"
+                f"{meta_html}"
+                f"{summary_html}"
+                "</li>"
+            )
+        parts.append("</ul></div>")
+        return "".join(parts)
+
+    has_content = any([news_new, articles_new, grants_new, jobs_new])
+    body = (
+        "<p class='empty'>Nothing new today — check back tomorrow.</p>"
+        if not has_content
+        else (
+            render_briefing_section("News", news_new, "news")
+            + render_briefing_section("Papers", articles_new, "papers")
+            + render_briefing_section("Grants", grants_new, "grants")
+            + render_briefing_section("Jobs", jobs_new, "jobs")
+        )
+    )
+
+    return (
+        "<section class='briefing' id='today'>"
+        f"<h2>{html.escape(today_date)}</h2>"
+        + body
+        + "</section>"
+    )
+
+
 def render_podcast_sidebar(episode_count: int, feed_url: str) -> str:
     if not feed_url:
         return ""
@@ -871,195 +941,162 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
     news = flatten_items(digests, "relevant_news")
     grants = flatten_items(digests, "relevant_grants")
 
-    archive_links = []
-    for digest in digests:
-        date_str = _clean(digest.get("date", "unknown"))
-        archive_links.append(f"<li><a href='{date_str}.html'>{date_str}</a></li>")
-
-    toots_html = render_toots_section(mastodon_state or {}, mastodon_instance_url)
-
     feed_url = public_url.rstrip("/") + "/feed.xml"
+
+    daily_links = " &middot; ".join(
+        f"<a href='{_clean(d.get('date', ''))}.html'>{_clean(d.get('date', ''))}</a>"
+        for d in digests
+    )
+
+    podcast_nav = ""
+    if podcast_feed_url:
+        podcast_nav = f" &middot; <a href='{html.escape(podcast_feed_url, quote=True)}'>Podcast RSS</a>"
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lab Digest</title>
+  <title>Racoon Lab Digest</title>
   <link rel="alternate" type="application/rss+xml" title="Racoon Lab Research Digest" href="{html.escape(feed_url, quote=True)}">
   <style>{_CSS}</style>
 </head>
 <body>
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-brand">Junkyard Racoon</div>
-      <h1>Lab Digest</h1>
-      <p class="sidebar-meta">Last run: {latest_date}</p>
-      <div class="nav-caption">Jump To</div>
-      <ul>
-        <li><a href="#toots">Latest Toots</a></li>
-        <li><a href="#articles">Articles</a></li>
-        <li><a href="#news">News</a></li>
-        <li><a href="#grants">Grants</a></li>
-        <li><a href="#jobs">Open Jobs</a></li>
-      </ul>
-      <div class="nav-caption">Feeds</div>
-      <ul>
-        <li><a href="{html.escape(feed_url, quote=True)}">RSS Feed</a></li>
-        <li style="color:#8aab96;font-size:0.75rem;font-family:var(--mono)">Recent grants, news &amp; articles</li>
-      </ul>
-      <div class="nav-caption">Daily Pages</div>
-      <ul>{''.join(archive_links)}</ul>
-      {render_podcast_sidebar(podcast_episode_count, podcast_feed_url)}
-    </aside>
-    <main class="content">
-      <section class="hero">
-        <div class="hero-shell">
-          <div class="hero-copy">
-            <div class="brand-kicker">Field Notes, Salvaged Nightly</div>
-            <h1>Daily Research Digest</h1>
-            <p class="hero-lede">Rolling intelligence on news, articles, grants, and a continuously updated jobs board. Filtered for relevance. Built for the Racoon Lab.</p>
-          </div>
-          {render_raccoon_badge()}
-        </div>
-        <div class="metrics">{render_metric_chips(digests, jobs)}</div>
-      </section>
-      {toots_html}
-      <section id="articles" class="content-card">
-        <div class="section-heading">
-          <h2>Articles</h2>
-          <span class="section-tag">{len(articles)} papers</span>
-        </div>
-        {render_articles_table(articles)}
-      </section>
-      <section id="news" class="content-card">
-        <div class="section-heading">
-          <h2>News</h2>
-          <span class="section-tag">{len(news)} items</span>
-        </div>
-        {render_news_table(news)}
-      </section>
-      <section id="grants" class="content-card">
-        <div class="section-heading">
-          <h2>Grants</h2>
-          <span class="section-tag">{len(grants)} opportunities</span>
-        </div>
-        {render_grants_table(grants)}
-      </section>
-      <section id="jobs" class="jobs-card">
-        <div class="section-heading">
-          <h2>Open Jobs</h2>
-          <span class="section-tag">live board</span>
-        </div>
-        <p class="meta">Continuously updated from the jobs-tagged newsletter flow. Filter and sort to find the right fit.</p>
-        {render_jobs_controls(all_tags)}
-        {render_jobs_table(jobs)}
-      </section>
-    </main>
+  <div class="site-header">
+    <span class="site-title">Junkyard Racoon &middot; Lab Digest</span>
+    <span class="site-date">{latest_date}</span>
   </div>
+  <nav class="site-nav">
+    <a href="#today">Today</a>
+    <a href="#papers">Papers</a>
+    <a href="#news">News</a>
+    <a href="#grants">Grants</a>
+    <a href="#jobs">Jobs</a>
+    <a href="{html.escape(feed_url, quote=True)}">RSS</a>
+  </nav>
+  <hr>
+
+  {render_today_briefing(digests, jobs)}
+
+  <hr>
+
+  <section id="papers" class="archive-section">
+    <h2>Papers <span class="count-badge">({len(articles)})</span></h2>
+    {render_articles_table(articles)}
+  </section>
+
+  <section id="news" class="archive-section">
+    <h2>News <span class="count-badge">({len(news)})</span></h2>
+    {render_news_table(news)}
+  </section>
+
+  <section id="grants" class="archive-section">
+    <h2>Grants <span class="count-badge">({len(grants)})</span></h2>
+    {render_grants_table(grants)}
+  </section>
+
+  <section id="jobs" class="archive-section">
+    <h2>Jobs Board <span class="count-badge">({len(jobs)} open)</span></h2>
+    <p style="font-size:0.84rem;color:var(--muted);margin:0 0 0.75rem;">Continuously updated from tagged newsletter flow.</p>
+    {render_jobs_controls(all_tags)}
+    {render_jobs_table(jobs)}
+  </section>
+
+  {"<hr><p style='font-size:0.72rem;font-family:var(--mono);color:var(--faint);margin:0;'>Daily pages: " + daily_links + podcast_nav + "</p>" if daily_links else ""}
+
   <script>{_JS}</script>
 </body>
 </html>
 """
 
 
+def _render_day_section(label: str, items: list[dict], kind: str) -> str:
+    """Render one category section for the daily page (all items, no dedup)."""
+    if not items:
+        return ""
+    parts = [f"<div class='day-section'><h3>{html.escape(label)}</h3><ul class='day-list'>"]
+    for item in items:
+        title = _clean(item.get("title", "Untitled"))
+        link = str(item.get("link", "")).strip()
+        raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        if kind == "jobs":
+            raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or "").strip()
+        # Trim to ~2 sentences
+        if len(raw_summary) > 300:
+            cut = raw_summary[:300].rsplit(".", 1)
+            raw_summary = cut[0].strip() + "." if len(cut) > 1 else raw_summary[:300].rsplit(" ", 1)[0] + "…"
+
+        if link:
+            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+        else:
+            title_html = title
+
+        meta_parts: list[str] = []
+        if kind == "news":
+            source = _clean(item.get("feed", "") or item.get("source", ""))
+            if source:
+                meta_parts.append(source)
+        elif kind == "papers":
+            journal = _clean(item.get("journal_name", "") or item.get("feed", ""))
+            try:
+                meta_parts.append(f"{int(float(item.get('relevance_score', 0)) * 100)}% fit")
+            except Exception:
+                pass
+            if journal:
+                meta_parts.append(journal)
+        elif kind == "grants":
+            deadline = _clean(item.get("deadline", "") or item.get("application_deadline", ""))
+            amount = _clean(item.get("amount", ""))
+            if deadline:
+                meta_parts.append(f"due {deadline}")
+            if amount:
+                meta_parts.append(amount)
+
+        meta_html = f"<div class='day-item-meta'>{' · '.join(meta_parts)}</div>" if meta_parts else ""
+        summary_html = f"<p class='day-item-summary'>{html.escape(raw_summary)}</p>" if raw_summary else ""
+
+        parts.append(
+            "<li>"
+            f"<div class='day-item-title'>{title_html}</div>"
+            f"{meta_html}"
+            f"{summary_html}"
+            "</li>"
+        )
+    parts.append("</ul></div>")
+    return "".join(parts)
+
+
 def render_daily_page(digest: dict, jobs: list[dict], public_url: str) -> str:
     digest_date = _clean(digest.get("date", "unknown"))
     all_tags = collect_all_tags(jobs)
+    news_html = _render_day_section("News", digest.get("relevant_news", []), "news")
+    papers_html = _render_day_section("Papers", digest.get("relevant_articles", []), "papers")
+    grants_html = _render_day_section("Grants", digest.get("relevant_grants", []), "grants")
+    day_content = news_html + papers_html + grants_html or "<p class='empty'>No items for this date.</p>"
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lab Digest {digest_date}</title>
-  <style>
-    :root{{--accent:#2d5c40;--accent-soft:#dce8df;--accent-glow:rgba(45,92,64,0.2);--muted:#655d52;--line:#d8d2c5;--ink:#1f2a1f;--mono:'JetBrains Mono','Fira Mono','Courier New',monospace;}}
-    *{{box-sizing:border-box;}}
-    body{{max-width:1200px;margin:0 auto;padding:24px;font-family:Georgia,"Times New Roman",serif;background:linear-gradient(180deg,#f7f1e4 0%,#e9dfcc 100%);color:var(--ink);}}
-    a{{color:var(--accent);}}
-    code{{font-family:var(--mono);font-size:0.82em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.18);border-radius:5px;padding:1px 5px;color:var(--accent);}}
-    .panel{{background:#fffaf0;border:1px solid #d4c4aa;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 18px 40px rgba(44,31,18,0.08);}}
-    .brand-kicker{{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#7e5738;}}
-    .digest-grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:14px;border-top:1px solid var(--line);}}
-    .column-card{{padding:16px 20px;border-right:1px solid var(--line);}}
-    .column-card:last-child{{border-right:none;}}
-    .column-card h3{{margin:0 0 10px;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-family:var(--mono);}}
-    .item-list{{list-style:disc;padding:0 0 0 18px;margin:0;}}
-    .item-list li{{padding:2px 0 4px;margin:0;line-height:1.45;color:var(--ink);}}
-    .item-list a{{color:var(--ink);font-weight:normal;text-decoration:none;}}
-    .item-list a:hover{{color:var(--accent);text-decoration:underline;}}
-    .item-meta{{font-size:0.78rem;color:var(--muted);margin:1px 0 4px;line-height:1.3;}}
-    .todos-section{{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;}}
-    .todos-section h3{{margin:0 0 14px;font-size:1rem;}}
-    .todo-list{{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;}}
-    .todo-item{{background:#f6eedf;border:1px solid rgba(126,87,56,0.12);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;flex:1 1 280px;}}
-    .todo-badge{{display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.68rem;font-family:var(--mono);letter-spacing:0.07em;text-transform:uppercase;line-height:1.5;flex-shrink:0;}}
-    .todo-high{{background:rgba(210,143,44,0.18);color:#7a4c0a;border:1px solid rgba(210,143,44,0.3);}}
-    .todo-urgent{{background:rgba(180,40,40,0.12);color:#8b1a1a;border:1px solid rgba(180,40,40,0.22);}}
-    .todo-medium{{background:rgba(45,92,64,0.1);color:var(--accent);border:1px solid rgba(45,92,64,0.2);}}
-    .todo-low{{background:rgba(100,100,100,0.07);color:var(--muted);border:1px solid rgba(100,100,100,0.14);}}
-    .todo-task{{font-size:0.93rem;flex:1 1 200px;}}
-    .todo-project{{font-size:0.74rem;font-family:var(--mono);color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:6px;flex-shrink:0;}}
-    .todo-note{{margin:4px 0 0;font-size:0.82rem;color:var(--muted);width:100%;}}
-    .meta{{color:var(--muted);font-size:0.9rem;}}
-    .section-heading{{display:flex;align-items:center;justify-content:space-between;gap:12px;}}
-    .section-tag{{padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:0.74rem;font-family:var(--mono);}}
-    .jobs-controls{{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;}}
-    .search-wrap{{position:relative;flex:1;min-width:180px;max-width:340px;}}
-    .search-icon{{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none;}}
-    .job-search{{width:100%;padding:9px 32px 9px 34px;border:1px solid #d4c4aa;border-radius:999px;background:#fff;font-size:0.88rem;font-family:var(--mono);color:var(--ink);outline:none;transition:border-color 0.2s;}}
-    .job-search:focus{{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}}
-    .clear-search{{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;line-height:1;display:none;}}
-    .clear-search.visible{{display:block;}}
-    .tag-filter-row{{display:flex;flex-wrap:wrap;gap:6px;}}
-    .tag-chip{{display:inline-block;padding:5px 11px;border-radius:999px;background:rgba(45,92,64,0.08);border:1px solid rgba(45,92,64,0.2);color:var(--accent);font-size:0.74rem;font-family:var(--mono);cursor:pointer;transition:background 0.15s;line-height:1;}}
-    .tag-chip:hover{{background:rgba(45,92,64,0.16);}}
-    .tag-chip.active{{background:var(--accent);border-color:var(--accent);color:#fff;}}
-    .jobs-count{{font-size:0.76rem;font-family:var(--mono);color:var(--muted);align-self:center;}}
-    .jobs-table{{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border-radius:14px;overflow:hidden;}}
-    .jobs-table th,.jobs-table td{{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;}}
-    .jobs-table thead th{{background:#dce8df;text-transform:uppercase;letter-spacing:0.08em;font-size:0.74rem;color:var(--accent);font-family:var(--mono);cursor:pointer;user-select:none;white-space:nowrap;}}
-    .jobs-table thead th:hover{{background:#cddfd0;}}
-    .jobs-table thead th .sort-icon{{display:inline-block;width:12px;margin-left:4px;opacity:0.4;}}
-    .jobs-table thead th.sort-asc .sort-icon::after{{content:'▲';}}
-    .jobs-table thead th.sort-desc .sort-icon::after{{content:'▼';}}
-    .jobs-table thead th.sort-asc .sort-icon,.jobs-table thead th.sort-desc .sort-icon{{opacity:1;}}
-    .jobs-table tbody tr:nth-child(odd) td{{background:rgba(255,255,255,0.45);}}
-    .jobs-table tbody tr:nth-child(even) td{{background:rgba(246,238,223,0.75);}}
-    .jobs-table tbody tr:hover td{{background:rgba(45,92,64,0.07);}}
-    .jobs-table tbody tr.hidden{{display:none;}}
-    .jobs-table td{{overflow-wrap:anywhere;}}
-    .score-badge{{font-family:var(--mono);font-size:0.8em;background:rgba(45,92,64,0.1);border:1px solid rgba(45,92,64,0.2);border-radius:4px;padding:2px 5px;color:var(--accent);display:block;margin-bottom:3px;}}
-    .fit-cell span{{display:block;color:var(--muted);font-size:0.88rem;}}
-    .job-tag{{display:inline-block;margin:0 4px 4px 0;padding:3px 8px;border-radius:999px;background:rgba(45,92,64,0.1);color:var(--accent);font-size:0.72rem;font-family:var(--mono);line-height:1;}}
-    .empty-cell{{color:var(--muted);text-align:center;padding:20px;}}
-    @media(max-width:980px){{.digest-grid{{grid-template-columns:1fr;}}}}
-    @media(max-width:760px){{
-      .jobs-controls{{flex-direction:column;align-items:stretch;}}
-      .search-wrap{{max-width:100%;}}
-      .jobs-table,.jobs-table thead,.jobs-table tbody,.jobs-table th,.jobs-table td,.jobs-table tr{{display:block;width:100%;}}
-      .jobs-table thead{{display:none;}}
-      .jobs-table tbody tr{{margin-bottom:12px;border:1px solid rgba(126,87,56,0.18);border-radius:12px;overflow:hidden;}}
-      .jobs-table tbody tr.hidden{{display:none;}}
-      .jobs-table td{{display:grid;grid-template-columns:100px 1fr;gap:8px;padding:9px 11px;}}
-      .jobs-table td::before{{content:attr(data-label);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--mono);padding-top:2px;}}
-      .todo-list{{flex-direction:column;}}
-      .todo-item{{flex:1 1 auto;}}
-    }}
-  </style>
+  <style>{_CSS}</style>
 </head>
 <body>
-  <div class="panel">
-    <p><a href="index.html">&larr; Back to digest index</a></p>
-    <div class="brand-kicker">Junkyard Racoon</div>
-    <h1>Daily Digest {digest_date}</h1>
-    <p>Base URL: <a href="{html.escape(public_url, quote=True)}">{_clean(public_url)}</a></p>
+  <div class="site-header">
+    <span class="site-title"><a href="index.html">&larr; Lab Digest</a></span>
+    <span class="site-date">{digest_date}</span>
   </div>
-  {render_digest_section(digest)}
-  <div class="panel">
-    <div class="section-heading"><h2>Open Jobs</h2><span class="section-tag">live board</span></div>
+  <hr>
+  <section class="briefing">
+    <h2>{digest_date}</h2>
+    {day_content}
+  </section>
+  <hr>
+  <section class="archive-section" id="jobs">
+    <h2>Jobs Board <span class="count-badge">({len(jobs)} open)</span></h2>
     {render_jobs_controls(all_tags)}
     {render_jobs_table(jobs)}
-  </div>
+  </section>
   <script>{_JS}</script>
 </body>
 </html>
