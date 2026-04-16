@@ -843,14 +843,17 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
     if not jobs_new and jobs:
         jobs_new = sorted(jobs, key=lambda j: float(j.get("student_relevance_score", 0) or 0), reverse=True)[:3]
 
-    def _truncate_summary(text: str, limit: int = 300) -> str:
+    def _truncate_summary(text: str, limit: int = 220) -> str:
         text = str(text or "").strip()
         if not text:
             return ""
         if len(text) <= limit:
             return text
-        cut = text[:limit].rsplit(".", 1)
-        return cut[0].strip() + "." if len(cut) > 1 else text[:limit].rsplit(" ", 1)[0].strip() + "…"
+        # Prefer stopping at a sentence boundary within the limit
+        period = text.rfind(".", 0, limit)
+        if period > limit // 3:
+            return text[:period + 1].strip()
+        return text[:limit].rsplit(" ", 1)[0].strip() + "…"
 
     def render_briefing_section(label: str, items: list[dict], kind: str) -> str:
         if not items:
@@ -861,7 +864,8 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
             link = str(item.get("link", "")).strip()
             raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
             if kind == "jobs":
-                raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or "").strip()
+                # Only use the scored fit reason — never fall back to summary/description fields
+                raw_summary = str(item.get("student_fit_reason") or "").strip()
             summary = _truncate_summary(raw_summary)
 
             if link:
@@ -1032,13 +1036,17 @@ def _render_day_section(label: str, items: list[dict], kind: str) -> str:
     for item in items:
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
-        raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
         if kind == "jobs":
-            raw_summary = str(item.get("student_fit_reason") or item.get("llm_summary") or "").strip()
-        # Trim to ~2 sentences
-        if len(raw_summary) > 300:
-            cut = raw_summary[:300].rsplit(".", 1)
-            raw_summary = cut[0].strip() + "." if len(cut) > 1 else raw_summary[:300].rsplit(" ", 1)[0] + "…"
+            raw_summary = str(item.get("student_fit_reason") or "").strip()
+        else:
+            raw_summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
+        # Trim to ~2 sentences, hard cap at 220 chars
+        if len(raw_summary) > 220:
+            period = raw_summary.rfind(".", 0, 220)
+            if period > 73:
+                raw_summary = raw_summary[:period + 1].strip()
+            else:
+                raw_summary = raw_summary[:220].rsplit(" ", 1)[0].strip() + "…"
 
         if link:
             title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"

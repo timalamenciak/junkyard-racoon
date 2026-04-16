@@ -20,7 +20,8 @@
       "Bash(find 'C:\\\\Users\\\\Tim Alamenciak\\\\Documents\\\\RacoonLab\\\\junkyard-racoon\\\\power-tools' -name *.log -o -name *log* -type f)",
       "Bash(python -c \"import power-tools.output.publish_static_digest\")",
       "Bash(python power-tools/output/publish_static_digest.py --help)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(python3 -c ':*)"
     ]
   }
 }
