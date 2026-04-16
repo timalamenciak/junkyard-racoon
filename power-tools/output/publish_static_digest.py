@@ -896,7 +896,9 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
                     meta_parts.append(amount)
             elif kind == "jobs":
                 org = _clean(item.get("organization", ""))
-                location = _clean(item.get("location", ""))
+                # location from GoodWork scraper may contain full job description after city — truncate hard
+                raw_location = str(item.get("location", "") or "").strip()
+                location = _truncate_display(raw_location.split("(")[0].strip(), 60)
                 if org:
                     meta_parts.append(org)
                 if location:
