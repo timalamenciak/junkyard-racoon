@@ -836,7 +836,9 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
 
     news_new = [i for i in today.get("relevant_news", []) if is_new(i)][:5]
     articles_new = [i for i in today.get("relevant_articles", []) if is_new(i)][:5]
-    grants_new = [i for i in today.get("relevant_grants", []) if is_new(i)][:5]
+    # Grants often remain active across multiple daily digests, so today's briefing
+    # should reflect the current grant slate even when an item first appeared earlier.
+    grants_new = list(today.get("relevant_grants", []))[:5]
     # Jobs: only those first surfaced today
     jobs_new = [j for j in jobs if j.get("first_seen_date") == today_date][:4]
     # Fallback: top-scored jobs if none are new today

@@ -270,3 +270,38 @@ def test_render_digest_section_includes_summaries_and_actions() -> None:
     assert "Recommended action:" in html
     assert "Grant summary" in html
     assert "Next step:" in html
+
+
+def test_render_today_briefing_keeps_repeated_grants_visible() -> None:
+    html = publish_static_digest.render_today_briefing(
+        [
+            {
+                "date": "2026-03-27",
+                "relevant_news": [],
+                "relevant_articles": [],
+                "relevant_grants": [
+                    {
+                        "title": "Urban wetlands adaptation catalyst grant",
+                        "llm_summary": "Still open and relevant for the lab.",
+                        "link": "",
+                    }
+                ],
+            },
+            {
+                "date": "2026-03-26",
+                "relevant_news": [],
+                "relevant_articles": [],
+                "relevant_grants": [
+                    {
+                        "title": "Urban wetlands adaptation catalyst grant",
+                        "llm_summary": "First seen yesterday.",
+                        "link": "",
+                    }
+                ],
+            },
+        ],
+        [],
+    )
+
+    assert "Urban wetlands adaptation catalyst grant" in html
+    assert "Still open and relevant for the lab." in html
