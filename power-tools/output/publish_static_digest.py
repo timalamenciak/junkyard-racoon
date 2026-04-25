@@ -38,6 +38,20 @@ def _truncate_display(value: str, limit: int) -> str:
     return html.escape(f"{shortened}...")
 
 
+def _first_sentence(text: str, max_chars: int = 240) -> str:
+    """Return the first sentence of text, hard-capped at max_chars."""
+    text = str(text or "").strip()
+    if not text:
+        return ""
+    for marker in (".", "!", "?"):
+        pos = text.find(marker)
+        if 0 < pos < max_chars:
+            return text[:pos + 1].strip()
+    if len(text) > max_chars:
+        return text[:max_chars].rsplit(" ", 1)[0].strip() + "…"
+    return text
+
+
 def _job_key(item: dict) -> str:
     return "||".join(
         [
@@ -427,86 +441,132 @@ def _tip(title_html: str, summary: str) -> str:
 def render_news_table(items: list[dict]) -> str:
     if not items:
         return "<p class='empty'>No news items found.</p>"
-    rows = [
-        "<table class='digest-table'>"
-        "<thead><tr><th>Date</th><th>Title</th></tr></thead><tbody>"
-    ]
+    parts = ["<ul class='archive-list'>"]
     for item in items:
         date = _clean(item.get("_digest_date", ""))
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
-        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
-        if link:
-            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
-        else:
-            title_html = f"<span>{title}</span>"
-        rows.append(f"<tr><td class='date-cell'>{date}</td><td>{_tip(title_html, summary)}</td></tr>")
-    rows.append("</tbody></table>")
-    return "".join(rows)
+        source = _clean(item.get("feed", "") or item.get("source", ""))
+        summary = _first_sentence(str(item.get("llm_summary") or item.get("summary", "")))
+        title_html = (
+            f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+            if link else f"<span>{title}</span>"
+        )
+        meta_html = f"<div class='archive-item-meta'>{source}</div>" if source else ""
+        summary_html = f"<p class='archive-item-summary'>{html.escape(summary)}</p>" if summary else ""
+        parts.append(
+            "<li class='archive-item'>"
+            f"<div class='archive-item-date'>{date}</div>"
+            "<div>"
+            f"<div class='archive-item-title'>{title_html}</div>"
+            f"{meta_html}{summary_html}"
+            "</div></li>"
+        )
+    parts.append("</ul>")
+    return "".join(parts)
 
 
 def render_articles_table(items: list[dict]) -> str:
     if not items:
         return "<p class='empty'>No articles found.</p>"
-    rows = [
-        "<table class='digest-table'>"
-        "<thead><tr><th>Date</th><th>Title</th><th>Authors</th><th>Journal</th></tr></thead><tbody>"
-    ]
+    parts = ["<ul class='archive-list'>"]
     for item in items:
         date = _clean(item.get("_digest_date", ""))
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
         authors = _clean(item.get("authors", ""))
         journal = _clean(item.get("journal_name", "") or item.get("feed", ""))
-        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
-        if link:
-            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
-        else:
-            title_html = f"<span>{title}</span>"
-        rows.append(
-            f"<tr><td class='date-cell'>{date}</td>"
-            f"<td>{_tip(title_html, summary)}</td>"
-            f"<td class='muted-cell'>{authors}</td>"
-            f"<td class='muted-cell'><em>{journal}</em></td></tr>"
+        summary = _first_sentence(str(item.get("llm_summary") or item.get("summary", "")))
+        title_html = (
+            f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+            if link else f"<span>{title}</span>"
         )
-    rows.append("</tbody></table>")
-    return "".join(rows)
+        meta_parts: list[str] = []
+        try:
+            score = int(float(item.get("relevance_score", 0)) * 100)
+            meta_parts.append(f"{score}% fit")
+        except Exception:
+            pass
+        if authors:
+            meta_parts.append(authors)
+        if journal:
+            meta_parts.append(f"<em>{journal}</em>")
+        meta_html = f"<div class='archive-item-meta'>{' &middot; '.join(meta_parts)}</div>" if meta_parts else ""
+        summary_html = f"<p class='archive-item-summary'>{html.escape(summary)}</p>" if summary else ""
+        parts.append(
+            "<li class='archive-item'>"
+            f"<div class='archive-item-date'>{date}</div>"
+            "<div>"
+            f"<div class='archive-item-title'>{title_html}</div>"
+            f"{meta_html}{summary_html}"
+            "</div></li>"
+        )
+    parts.append("</ul>")
+    return "".join(parts)
+
+
+def render_grants_filter(items: list[dict]) -> str:
+    """Render status filter chips for manually-tracked grants."""
+    statuses: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        if item.get("always_surface"):
+            s = str(item.get("status", "tracking")).lower()
+            if s not in seen:
+                seen.add(s)
+                statuses.append(s)
+    if not statuses:
+        return ""
+    chips = "".join(
+        f"<button class='grants-chip' data-status='{html.escape(s, quote=True)}'>{html.escape(s)}</button>"
+        for s in sorted(statuses)
+    )
+    return (
+        "<div class='grants-filter-row'>"
+        "<button class='grants-chip active' data-status='__all__'>All</button>"
+        + chips
+        + "</div>"
+    )
 
 
 def render_grants_table(items: list[dict]) -> str:
     if not items:
         return "<p class='empty'>No grant opportunities found.</p>"
-    rows = [
-        "<table class='digest-table'>"
-        "<thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Deadline</th><th>Amount</th></tr></thead><tbody>"
-    ]
+    parts = ["<ul class='archive-list'>"]
     for item in items:
         date = _clean(item.get("_digest_date", ""))
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()
         is_manual = bool(item.get("always_surface"))
-        summary = str(item.get("llm_summary") or item.get("summary", "")).strip()
-        if link:
-            title_html = f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
-        else:
-            title_html = f"<span>{title}</span>"
-        if is_manual:
-            status = str(item.get("status", "tracking")).lower()
+        summary = _first_sentence(str(item.get("llm_summary") or item.get("summary", "")))
+        title_html = (
+            f"<a href='{html.escape(link, quote=True)}' target='_blank' rel='noreferrer'>{title}</a>"
+            if link else f"<span>{title}</span>"
+        )
+        status = str(item.get("status", "tracking")).lower() if is_manual else ""
+        data_status = f" data-status='{html.escape(status, quote=True)}'" if status else ""
+        meta_parts: list[str] = []
+        if is_manual and status:
             cls = _GRANT_STATUS_CLASS.get(status, "status-tracking")
-            status_html = f"<span class='grant-status {cls}'>{html.escape(status)}</span>"
-        else:
-            status_html = ""
+            meta_parts.append(f"<span class='grant-status {cls}'>{html.escape(status)}</span>")
         deadline = _clean(item.get("deadline", "") or item.get("application_deadline", ""))
         amount = _clean(item.get("amount", ""))
-        rows.append(
-            f"<tr><td class='date-cell'>{date}</td>"
-            f"<td>{_tip(title_html, summary)}</td>"
-            f"<td>{status_html}</td>"
-            f"<td class='muted-cell'>{deadline}</td>"
-            f"<td class='muted-cell'>{amount}</td></tr>"
+        if deadline:
+            meta_parts.append(f"<span class='grant-deadline'>due {deadline}</span>")
+        if amount:
+            meta_parts.append(f"<span class='grant-amount'>{amount}</span>")
+        meta_html = f"<div class='archive-item-meta'>{' &ensp; '.join(meta_parts)}</div>" if meta_parts else ""
+        summary_html = f"<p class='archive-item-summary'>{html.escape(summary)}</p>" if summary else ""
+        parts.append(
+            f"<li class='archive-item'{data_status}>"
+            f"<div class='archive-item-date'>{date}</div>"
+            "<div>"
+            f"<div class='archive-item-title'>{title_html}</div>"
+            f"{meta_html}{summary_html}"
+            "</div></li>"
         )
-    rows.append("</tbody></table>")
-    return "".join(rows)
+    parts.append("</ul>")
+    return "".join(parts)
 
 
 def render_toots_section(mastodon_state: dict, instance_url: str) -> str:
@@ -582,13 +642,17 @@ def render_digest_section(digest: dict) -> str:
 _CSS = """
   :root {
     --bg: #ffffff;
-    --ink: #111110;       /* 18:1 on white */
-    --muted: #3d3a37;     /* 11:1 on white — body secondary text */
-    --faint: #5e5b57;     /* 7:1 on white — dates, labels, metadata */
-    --accent: #1b5436;    /* 8.5:1 on white — links and highlights */
-    --line: #ccc8c2;      /* decorative borders, no contrast requirement */
-    --panel: #f5f4f1;     /* hover backgrounds */
+    --ink: #111110;
+    --muted: #3d3a37;
+    --faint: #5e5b57;
+    --accent: #1b5436;
+    --line: #ccc8c2;
+    --panel: #f5f4f1;
     --mono: 'JetBrains Mono','Fira Mono','Courier New',monospace;
+    --c-papers: #1a3a6b;
+    --c-news: #1b5436;
+    --c-grants: #7c4000;
+    --c-jobs: #2d2218;
   }
   * { box-sizing: border-box; }
   body { background: var(--bg); color: var(--ink); font-family: Georgia,'Times New Roman',serif; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-size: 1rem; line-height: 1.65; }
@@ -611,8 +675,16 @@ _CSS = """
 
   /* ── Today's briefing ── */
   .briefing h2 { font-size: 1.05rem; margin: 0 0 1.5rem; border-bottom: 1px solid var(--ink); padding-bottom: 0.35rem; }
-  .briefing-section { margin-bottom: 1.5rem; }
+  .briefing-section { margin-bottom: 1.75rem; padding-left: 0.85rem; border-left: 3px solid var(--line); }
+  .briefing-section.s-news    { border-left-color: var(--c-news); }
+  .briefing-section.s-papers  { border-left-color: var(--c-papers); }
+  .briefing-section.s-grants  { border-left-color: var(--c-grants); }
+  .briefing-section.s-jobs    { border-left-color: var(--c-jobs); }
   .briefing-section h3 { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin: 0 0 0.6rem; }
+  .briefing-section.s-news h3   { color: var(--c-news); }
+  .briefing-section.s-papers h3 { color: var(--c-papers); }
+  .briefing-section.s-grants h3 { color: var(--c-grants); }
+  .briefing-section.s-jobs h3   { color: var(--c-jobs); }
   .briefing-list { list-style: none; padding: 0; margin: 0; }
   .briefing-list li { padding: 0.55rem 0; border-bottom: 1px dotted var(--line); }
   .briefing-list li:last-child { border-bottom: none; }
@@ -621,35 +693,59 @@ _CSS = """
   .briefing-item-summary { font-size: 0.86rem; color: var(--muted); margin: 0; line-height: 1.5; }
 
   /* ── Archive sections ── */
-  .archive-section { margin-top: 2rem; }
-  .archive-section > h2 { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
-  .archive-section > h2::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+  .archive-section { margin-top: 2.5rem; }
+  .archive-section > h2 {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    margin: 0 0 0.85rem;
+    padding: 0.45rem 0.75rem;
+    background: var(--panel);
+    border-left: 4px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .archive-section.s-papers > h2 { border-left-color: var(--c-papers); color: var(--c-papers); }
+  .archive-section.s-news > h2   { border-left-color: var(--c-news);   color: var(--c-news); }
+  .archive-section.s-grants > h2 { border-left-color: var(--c-grants); color: var(--c-grants); }
+  .archive-section.s-jobs > h2   { border-left-color: var(--c-jobs);   color: var(--c-jobs); }
   .count-badge { font-size: 0.68rem; color: var(--faint); font-weight: normal; }
 
-  /* ── Archive tables ── */
-  .digest-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-  .digest-table th { text-align: left; font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); padding: 4px 8px 8px; border-bottom: 1px solid var(--line); font-weight: normal; }
-  .digest-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .digest-table tbody tr:hover td { background: var(--panel); }
-  .digest-table a { color: var(--ink); }
-  .digest-table a:hover { color: var(--accent); text-decoration: underline; }
-  .date-cell { white-space: nowrap; color: var(--faint); font-family: var(--mono); font-size: 0.72rem; width: 88px; }
-  .muted-cell { color: var(--muted); font-size: 0.82rem; }
+  /* ── Section search ── */
+  .section-search-wrap { margin: 0 0 0.6rem; }
+  .section-search { padding: 5px 10px; border: 1px solid var(--line); border-radius: 3px; font-size: 0.82rem; font-family: var(--mono); color: var(--ink); background: #fff; outline: none; width: 100%; max-width: 300px; }
+  .section-search:focus { border-color: var(--accent); }
 
-  /* ── Hover tooltip ── */
-  .tip { position: relative; display: inline; }
-  .tip .tip-text { display: none; position: absolute; left: 0; top: calc(100% + 4px); background: #23262b; color: #f4efe6; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; line-height: 1.5; width: 300px; max-width: 80vw; white-space: normal; z-index: 200; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.25); font-family: Georgia,serif; }
-  .tip:hover .tip-text { display: block; }
+  /* ── Archive list items (news, papers, grants) ── */
+  .archive-list { list-style: none; padding: 0; margin: 0; }
+  .archive-item { display: grid; grid-template-columns: 90px 1fr; gap: 0 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
+  .archive-item:last-child { border-bottom: none; }
+  .archive-item.hidden { display: none; }
+  .archive-item-date { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); padding-top: 0.2rem; white-space: nowrap; }
+  .archive-item-title { font-size: 0.95rem; line-height: 1.4; }
+  .archive-item-title a { color: var(--ink); }
+  .archive-item-title a:hover { color: var(--accent); text-decoration: underline; }
+  .archive-item-meta { font-family: var(--mono); font-size: 0.68rem; color: var(--faint); margin: 0.2rem 0 0.3rem; }
+  .archive-item-summary { font-size: 0.84rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* ── Grants status filter ── */
+  .grants-filter-row { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 0.6rem; }
+  .grants-chip { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); color: var(--muted); font-size: 0.68rem; font-family: var(--mono); cursor: pointer; background: transparent; transition: background 0.1s; }
+  .grants-chip:hover { background: var(--panel); }
+  .grants-chip.active { background: var(--c-grants); border-color: var(--c-grants); color: #fff; }
 
   /* ── Grant status badges ── */
   .grant-status, .grant-deadline, .grant-amount { display: inline-block; font-size: 0.68rem; font-family: var(--mono); padding: 1px 5px; line-height: 1.5; }
-  .grant-deadline { color: #6b3d00; } /* 8:1 on white */
+  .grant-deadline { color: #6b3d00; }
   .grant-amount { color: var(--muted); }
-  .status-tracking { background: #eef0fa; color: #1e2e7a; }   /* 9.5:1 */
-  .status-drafting { background: #fdf3e0; color: #6b3d00; }   /* 8:1 */
-  .status-submitted { background: #e6f2eb; color: #1b5436; }  /* 8.5:1 */
-  .status-awarded { background: #e2f5e8; color: #14472a; }    /* 9.5:1 */
-  .status-declined { background: #fae8e8; color: #6e1212; }   /* 9:1 */
+  .status-tracking  { background: #eef0fa; color: #1e2e7a; }
+  .status-drafting  { background: #fdf3e0; color: #6b3d00; }
+  .status-submitted { background: #e6f2eb; color: #1b5436; }
+  .status-awarded   { background: #e2f5e8; color: #14472a; }
+  .status-declined  { background: #fae8e8; color: #6e1212; }
 
   /* ── Jobs controls ── */
   .jobs-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0.75rem 0; }
@@ -671,7 +767,7 @@ _CSS = """
   .jobs-table thead th { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); font-weight: normal; cursor: pointer; user-select: none; white-space: nowrap; padding-bottom: 10px; }
   .jobs-table thead th:hover { color: var(--ink); }
   .jobs-table thead th .sort-icon { display: inline-block; width: 12px; margin-left: 3px; opacity: 0.4; }
-  .jobs-table thead th.sort-asc .sort-icon::after { content: '▲'; }
+  .jobs-table thead th.sort-asc .sort-icon::after  { content: '▲'; }
   .jobs-table thead th.sort-desc .sort-icon::after { content: '▼'; }
   .jobs-table thead th.sort-asc .sort-icon, .jobs-table thead th.sort-desc .sort-icon { opacity: 1; color: var(--accent); }
   .jobs-table tbody tr:hover td { background: var(--panel); }
@@ -687,8 +783,14 @@ _CSS = """
   .empty-cell { color: var(--muted); text-align: center; padding: 20px; }
 
   /* ── Daily page item list ── */
-  .day-section { margin-bottom: 1.75rem; }
+  .day-section { margin-bottom: 1.75rem; padding-left: 0.85rem; border-left: 3px solid var(--line); }
+  .day-section.s-news    { border-left-color: var(--c-news); }
+  .day-section.s-papers  { border-left-color: var(--c-papers); }
+  .day-section.s-grants  { border-left-color: var(--c-grants); }
   .day-section h3 { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin: 0 0 0.6rem; }
+  .day-section.s-news h3   { color: var(--c-news); }
+  .day-section.s-papers h3 { color: var(--c-papers); }
+  .day-section.s-grants h3 { color: var(--c-grants); }
   .day-list { list-style: none; padding: 0; margin: 0; }
   .day-list li { padding: 0.55rem 0; border-bottom: 1px dotted var(--line); }
   .day-list li:last-child { border-bottom: none; }
@@ -698,6 +800,8 @@ _CSS = """
 
   @media (max-width: 700px) {
     body { padding: 1rem 1rem 3rem; }
+    .archive-item { grid-template-columns: 1fr; }
+    .archive-item-date { padding-top: 0; margin-bottom: 0.2rem; }
     .jobs-table, .jobs-table thead, .jobs-table tbody, .jobs-table th, .jobs-table td, .jobs-table tr { display: block; width: 100%; }
     .jobs-table thead { display: none; }
     .jobs-table tbody tr { margin-bottom: 12px; border: 1px solid var(--line); }
@@ -709,6 +813,56 @@ _CSS = """
 
 _JS = """
 (function() {
+  // ── Generic section text search ──
+  function initSectionSearch(sectionId) {
+    var section = document.getElementById(sectionId);
+    if (!section) return;
+    var input = section.querySelector('.section-search');
+    if (!input) return;
+    var items = section.querySelectorAll('.archive-item');
+    input.addEventListener('input', function() {
+      var q = input.value.toLowerCase().trim();
+      items.forEach(function(item) {
+        item.classList.toggle('hidden', !!(q && !item.textContent.toLowerCase().includes(q)));
+      });
+    });
+  }
+  initSectionSearch('papers');
+  initSectionSearch('news');
+
+  // ── Grants: text search + status filter ──
+  var grantsSection = document.getElementById('grants');
+  if (grantsSection) {
+    var grantsSearch = grantsSection.querySelector('.section-search');
+    var grantsFilterRow = grantsSection.querySelector('.grants-filter-row');
+    var activeStatus = '__all__';
+    var grantsItems = grantsSection.querySelectorAll('.archive-item');
+
+    function filterGrants() {
+      var q = grantsSearch ? grantsSearch.value.toLowerCase().trim() : '';
+      grantsItems.forEach(function(item) {
+        var text = item.textContent.toLowerCase();
+        var status = (item.dataset.status || '').toLowerCase();
+        var matchSearch = !q || text.includes(q);
+        var matchStatus = activeStatus === '__all__' || status === activeStatus;
+        item.classList.toggle('hidden', !(matchSearch && matchStatus));
+      });
+    }
+    if (grantsSearch) { grantsSearch.addEventListener('input', filterGrants); }
+    if (grantsFilterRow) {
+      grantsFilterRow.addEventListener('click', function(e) {
+        var chip = e.target.closest('[data-status]');
+        if (!chip) return;
+        activeStatus = chip.dataset.status;
+        grantsFilterRow.querySelectorAll('.grants-chip').forEach(function(c) {
+          c.classList.toggle('active', c === chip);
+        });
+        filterGrants();
+      });
+    }
+  }
+
+  // ── Jobs table ──
   var table = document.getElementById('jobs-table');
   if (!table) return;
   var tbody = table.querySelector('tbody');
@@ -747,21 +901,17 @@ _JS = """
     if (!rows.length) return;
     if (sortCol === col) { sortDir *= -1; }
     else { sortCol = col; sortDir = 1; }
-
     rows.sort(function(a, b) {
       var aCells = a.querySelectorAll('td');
       var bCells = b.querySelectorAll('td');
       var aText = aCells[col] ? aCells[col].textContent.trim() : '';
       var bText = bCells[col] ? bCells[col].textContent.trim() : '';
-      // Try numeric comparison for score/date-like columns
       var aNum = parseFloat(aText), bNum = parseFloat(bText);
       if (!isNaN(aNum) && !isNaN(bNum)) return sortDir * (aNum - bNum);
       return sortDir * aText.localeCompare(bText, undefined, {numeric: true});
     });
     rows.forEach(function(r) { tbody.appendChild(r); });
-
-    // Update header indicators
-    table.querySelectorAll('thead th').forEach(function(th, i) {
+    table.querySelectorAll('thead th').forEach(function(th) {
       th.classList.remove('sort-asc', 'sort-desc');
       if (parseInt(th.dataset.col, 10) === col) {
         th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
@@ -769,14 +919,9 @@ _JS = """
     });
   }
 
-  // Wire up sort on headers
   table.querySelectorAll('thead th[data-col]').forEach(function(th) {
-    th.addEventListener('click', function() {
-      sortTable(parseInt(th.dataset.col, 10));
-    });
+    th.addEventListener('click', function() { sortTable(parseInt(th.dataset.col, 10)); });
   });
-
-  // Wire up search
   if (searchInput) {
     searchInput.addEventListener('input', function() {
       clearBtn && clearBtn.classList.toggle('visible', !!searchInput.value);
@@ -790,8 +935,6 @@ _JS = """
       filterRows();
     });
   }
-
-  // Wire up tag filters
   if (tagRow) {
     tagRow.addEventListener('click', function(e) {
       var chip = e.target.closest('[data-tag]');
@@ -803,7 +946,6 @@ _JS = """
       filterRows();
     });
   }
-
   updateCount();
 })();
 """
@@ -860,7 +1002,7 @@ def render_today_briefing(digests: list[dict], jobs: list[dict]) -> str:
     def render_briefing_section(label: str, items: list[dict], kind: str) -> str:
         if not items:
             return ""
-        parts = [f"<div class='briefing-section'><h3>{html.escape(label)}</h3><ul class='briefing-list'>"]
+        parts = [f"<div class='briefing-section s-{html.escape(kind)}'><h3>{html.escape(label)}</h3><ul class='briefing-list'>"]
         for item in items:
             title = _clean(item.get("title", "Untitled"))
             link = str(item.get("link", "")).strip()
@@ -1002,22 +1144,26 @@ def render_index(state: dict, public_url: str, podcast_feed_url: str = "", podca
 
   <hr>
 
-  <section id="papers" class="archive-section">
+  <section id="papers" class="archive-section s-papers">
     <h2>Papers <span class="count-badge">({len(articles)})</span></h2>
+    <div class="section-search-wrap"><input type="text" class="section-search" placeholder="Search papers…" autocomplete="off"></div>
     {render_articles_table(articles)}
   </section>
 
-  <section id="news" class="archive-section">
+  <section id="news" class="archive-section s-news">
     <h2>News <span class="count-badge">({len(news)})</span></h2>
+    <div class="section-search-wrap"><input type="text" class="section-search" placeholder="Search news…" autocomplete="off"></div>
     {render_news_table(news)}
   </section>
 
-  <section id="grants" class="archive-section">
+  <section id="grants" class="archive-section s-grants">
     <h2>Grants <span class="count-badge">({len(grants)})</span></h2>
+    <div class="section-search-wrap"><input type="text" class="section-search" placeholder="Search grants…" autocomplete="off"></div>
+    {render_grants_filter(grants)}
     {render_grants_table(grants)}
   </section>
 
-  <section id="jobs" class="archive-section">
+  <section id="jobs" class="archive-section s-jobs">
     <h2>Jobs Board <span class="count-badge">({len(jobs)} open)</span></h2>
     <p style="font-size:0.84rem;color:var(--muted);margin:0 0 0.75rem;">Continuously updated from tagged newsletter flow.</p>
     {render_jobs_controls(all_tags)}
@@ -1036,7 +1182,7 @@ def _render_day_section(label: str, items: list[dict], kind: str) -> str:
     """Render one category section for the daily page (all items, no dedup)."""
     if not items:
         return ""
-    parts = [f"<div class='day-section'><h3>{html.escape(label)}</h3><ul class='day-list'>"]
+    parts = [f"<div class='day-section s-{html.escape(kind)}'><h3>{html.escape(label)}</h3><ul class='day-list'>"]
     for item in items:
         title = _clean(item.get("title", "Untitled"))
         link = str(item.get("link", "")).strip()

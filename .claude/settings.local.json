@@ -21,7 +21,9 @@
       "Bash(python -c \"import power-tools.output.publish_static_digest\")",
       "Bash(python power-tools/output/publish_static_digest.py --help)",
       "Bash(python -c ':*)",
-      "Bash(python3 -c ':*)"
+      "Bash(python3 -c ':*)",
+      "Bash(xargs grep *)",
+      "Bash(python -m py_compile power-tools/output/publish_static_digest.py)"
     ]
   }
 }
